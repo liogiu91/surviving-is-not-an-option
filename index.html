@@ -112,11 +112,12 @@
   }
 
 
-  /* Keep the defeat scene unobstructed on desktop and mobile. */
-  #wrap.defeat-clean-screen header,
-  #wrap.defeat-clean-screen footer,
-  #wrap.defeat-clean-screen #hud,
-  #wrap.defeat-clean-screen #touchControls {
+  /* Hide gameplay chrome only during the cinematic defeat illustration.
+     The GAME OVER menu that follows remains completely unchanged. */
+  #wrap.defeat-sequence-clean > header,
+  #wrap.defeat-sequence-clean > footer,
+  #wrap.defeat-sequence-clean #hud,
+  #wrap.defeat-sequence-clean #touchControls {
     display: none !important;
   }
 
@@ -215,7 +216,7 @@ function reset(){
  updateHealthUI();updateStaminaUI();
 }
 function start(){
- document.getElementById('wrap').classList.remove('defeat-clean-screen');
+ document.getElementById('wrap').classList.remove('defeat-sequence-clean');
  sprintHeld=false;keys.shift=false;reset();running=true;startTime=performance.now();last=startTime;overlay.classList.add('hidden');
  const subtitle=document.querySelector('header .sub');
  if(subtitle)subtitle.textContent=selectedLevel===1?'MICRO SURVIVAL · BUILD 1.4 · HERO SPRITES':'LEVEL 2 · THE OFFICE';
@@ -647,6 +648,7 @@ function drawDeath(dt){
 
 
 function drawDefeatScene(dt){
+ document.getElementById('wrap').classList.add('defeat-sequence-clean');
  defeatTimer+=dt;
  const t=defeatTimer;
  const isOffice=selectedLevel===2;
@@ -691,8 +693,8 @@ function drawDefeatScene(dt){
 }
 function showGameOver(){
  if(defeatPhase!=='wait')return;
+ document.getElementById('wrap').classList.remove('defeat-sequence-clean');
  defeatPhase='menu';
- document.getElementById('wrap').classList.add('defeat-clean-screen');
  overlay.classList.remove('hidden');
  overlay.querySelector('h2').textContent='GAME OVER';
  overlay.querySelector('p').textContent='Hai esaurito i punti vita. Hai resistito '+elapsed.toFixed(1)+' secondi in modalità '+difficulties[difficulty].label+'. Vuoi tentare di nuovo?';
