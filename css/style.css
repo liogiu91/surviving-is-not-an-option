@@ -1,0 +1,115 @@
+:root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#11131a; color:#f5f1e8; font-family:Georgia,serif; display:flex; min-height:100vh; align-items:center; justify-content:center; }
+  #wrap { width:min(100vw, 1100px); padding:14px; }
+  header { display:flex; justify-content:space-between; align-items:end; gap:12px; margin:0 2px 10px; }
+  h1 { margin:0; font-size:clamp(20px,3vw,30px); letter-spacing:.12em; }
+  .sub { color:#b7b2a8; font:12px/1.4 system-ui,sans-serif; letter-spacing:.08em; }
+  #gamebox { position:relative; border:1px solid #5c5260; border-radius:10px; overflow:hidden; box-shadow:0 18px 70px #000b; background:#27252a; }
+  canvas { width:100%; display:block; image-rendering:pixelated; aspect-ratio: 16 / 10; }
+  #hud { position:absolute; inset:12px 14px auto; display:flex; justify-content:space-between; align-items:start; pointer-events:none; font:12px system-ui,sans-serif; text-shadow:0 2px 4px #000; gap:10px; }
+  #healthWrap { width:min(250px,42vw); }
+  #healthLabel { display:flex; justify-content:space-between; margin-bottom:5px; color:#fff; font-weight:700; letter-spacing:.08em; }
+  #healthTrack { height:13px; background:#24151d; border:1px solid #ffffff80; border-radius:9px; overflow:hidden; box-shadow:0 2px 7px #0009; }
+  #healthFill { height:100%; width:100%; background:linear-gradient(90deg,#a52b4d,#f08ba8); transition:width .18s ease; }
+  .difficulty { display:flex; gap:7px; justify-content:center; flex-wrap:wrap; margin:14px 0 17px; }
+  .difficulty button { padding:8px 12px; background:#34313b; color:#eee; border:1px solid #77707c; font-size:12px; }
+  .difficulty button.selected { background:#e9a9c2; color:#21151d; border-color:#ffd4e3; }
+  .level-select { margin:7px 0 12px; }
+  .level-select button { font-size:11px; }
+  .pill { background:#111923bb; border:1px solid #ffffff30; padding:7px 10px; border-radius:6px; }
+  #overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#090b10b8; text-align:center; padding:24px; }
+  #overlay.hidden { display:none; }
+  .panel { max-width:440px; background:#171a22ed; border:1px solid #847687; padding:25px; border-radius:10px; box-shadow:0 10px 50px #0009; }
+  .panel h2 { margin:0 0 9px; letter-spacing:.12em; }
+  .panel p { color:#d0c9c2; font:14px/1.55 system-ui,sans-serif; }
+  button { background:#e9a9c2; color:#21151d; border:0; padding:11px 20px; border-radius:5px; font-weight:800; cursor:pointer; letter-spacing:.06em; }
+  button:hover { background:#ffc5d9; }
+  footer { display:flex; justify-content:space-between; gap:12px; margin:9px 2px 0; color:#aaa5a0; font:12px system-ui,sans-serif; }
+  #touchControls { display:none; position:absolute; z-index:6; inset:auto 0 12px; padding:0 14px; justify-content:space-between; align-items:end; pointer-events:none; touch-action:none; }
+  .dpad { display:flex; gap:10px; pointer-events:auto; }
+  .touchbtn { width:64px; height:64px; padding:0; border-radius:9px; background:#151a25bb; border:1px solid #ffffff85; color:white; font:700 19px system-ui,sans-serif; touch-action:none; user-select:none; -webkit-user-select:none; }
+  .touchbtn:active { background:#e9a9c2; color:#21151d; }
+  .sprintbtn { pointer-events:auto; position:relative; z-index:8; touch-action:none; -webkit-tap-highlight-color:transparent; }
+  #touchHint { align-self:end; margin:0 0 7px 10px; color:#fff; font:11px system-ui,sans-serif; text-shadow:0 2px 5px #000; opacity:.8; }
+  @media (pointer:coarse), (max-width:700px) {
+    #touchControls { display:flex; }
+    footer span:first-child { display:none; }
+    #wrap { padding:5px; }
+    header { margin-bottom:6px; }
+  }
+  kbd { color:#fff; background:#33343d; border:1px solid #777; border-radius:4px; padding:2px 5px; }
+  @media(max-width:650px) { footer { flex-direction:column; } #wrap{padding:7px;} }
+
+  /* Responsive fit: preserve the full 16:10 game world on phones and tablets. */
+  @media (pointer:coarse), (max-width:700px) {
+    html, body { width:100%; min-height:100%; }
+    body { min-height:100vh; min-height:100dvh; padding:0; overflow-x:hidden; }
+    #wrap {
+      width:min(100vw, calc((100dvh - 12px) * 1.6));
+      max-width:1100px;
+      padding:4px;
+      margin:auto;
+    }
+    header, footer { display:none; }
+    #gamebox { width:100%; border-radius:7px; }
+    canvas { width:100%; height:auto; aspect-ratio:16 / 10; }
+    #hud { inset:7px 8px auto; gap:6px; font-size:10px; }
+    #healthWrap { width:min(160px,42vw); }
+    #healthTrack { height:9px; }
+    #touchControls { inset:auto 0 7px; padding:0 8px; }
+    .dpad { gap:6px !important; }
+    .touchbtn {
+      width:clamp(36px, 10vw, 48px);
+      height:clamp(36px, 10vw, 48px);
+      border-radius:8px;
+      font-size:16px;
+      opacity:.82;
+      backdrop-filter:blur(3px);
+    }
+    #touchHint { font-size:9px; margin:0 0 5px 7px; }
+    #overlay { padding:8px; }
+    #overlay .panel {
+      width:min(94%, 520px);
+      max-height:calc(100% - 12px);
+      overflow-y:auto;
+      padding:clamp(12px,3vw,22px);
+    }
+    #overlay h2 { font-size:clamp(18px,4.5vw,26px); }
+    #overlay p { font-size:clamp(11px,2.8vw,14px); line-height:1.35; }
+    .difficulty { gap:5px; margin:8px 0 10px; }
+    .difficulty button { padding:7px 9px; font-size:11px; }
+    #start { padding:10px 15px; font-size:12px; }
+  }
+  @media (pointer:coarse) and (orientation:landscape) {
+    #wrap { width:min(100vw, calc((100dvh - 8px) * 1.6)); }
+    #touchHint { display:none; }
+    .touchbtn { width:42px; height:42px; }
+  }
+
+
+  #staminaLabel { display:flex; justify-content:space-between; margin:5px 0 3px; color:#f6d7a1; font-weight:700; font-size:10px; letter-spacing:.08em; }
+  #staminaTrack { height:6px; background:#211b24; border:1px solid #ffffff66; border-radius:8px; overflow:hidden; }
+  #staminaFill { width:100%; height:100%; background:linear-gradient(90deg,#c18a42,#f5d58a); transition:width .08s linear; }
+  /* The overlay ignores pointer input by default; explicitly re-enable it on sprint. */
+  .sprintbtn { margin-left:auto; border-color:#f3cf86aa; color:#ffe2a0; font-size:19px; pointer-events:auto; position:relative; z-index:8; touch-action:none; -webkit-tap-highlight-color:transparent; }
+  .sprintbtn.pressed,.sprintbtn.active-sprint { background:#d49a4b; color:#241a13; box-shadow:0 0 16px #f3cf8677; }
+  @media (pointer:coarse), (max-width:700px) {
+    #healthWrap { width:min(160px,42vw); }
+    #staminaLabel { font-size:8px; margin-top:3px; }
+    #staminaTrack { height:5px; }
+    /* The overlay ignores pointer input by default; explicitly re-enable it on sprint. */
+  .sprintbtn { margin-left:auto; width:clamp(36px,10vw,48px); height:clamp(36px,10vw,48px); }
+    #touchControls { justify-content:space-between; }
+    #touchHint { display:none; }
+  }
+
+
+  /* Hide gameplay chrome only during the cinematic defeat illustration.
+     The GAME OVER menu that follows remains completely unchanged. */
+  #wrap.defeat-sequence-clean > header,
+  #wrap.defeat-sequence-clean > footer,
+  #wrap.defeat-sequence-clean #hud,
+  #wrap.defeat-sequence-clean #touchControls {
+    display: none !important;
+  }
