@@ -66,3 +66,45 @@ Pozza, impatto e residui di sangue dei livelli 1 e 2 condividono l'ancoraggio de
 - Aggiornata la descrizione del livello: “La piscina della scuola è deserta, ma non sei al sicuro. Tra piastrelle bagnate e riflessi d'acqua, qualcuno passeggia tranquillamente lungo il bordo vasca. Per te, ogni passo potrebbe essere l'ultimo.”
 - Aggiornata la battuta di sconfitta: “Ahi, la caviglia! Ma su cosa sono scivolata?”
 - La schermata di sconfitta del livello 4 usa ora un'immagine dedicata; il fondale di gioco resta invariato.
+
+
+## Sistema di salvataggio — prima integrazione
+- Aggiunto `js/saveManager.js`, indipendente dal motore di gioco.
+- I dati vengono memorizzati in `localStorage` con chiave `siota.saveData`.
+- La struttura separa impostazioni, progressione della campagna e statistiche globali.
+- `startNewCampaign()` riporta la progressione al livello 1 senza azzerare statistiche o difficoltà.
+- `selectLevel()` consente di selezionare qualsiasi livello già sbloccato.
+- `recordVictory()` registra una vittoria e sblocca il livello successivo (fino al livello 4).
+- Sono disponibili metodi per registrare avvii, morti, tempo giocato e migliori tempi di sopravvivenza.
+- Sono predisposte funzioni di esportazione/importazione JSON e reset completo.
+- Il modulo viene caricato prima del motore di gioco, ma in questa fase non modifica ancora il gameplay né l'interfaccia esistente.
+
+## v0.2.4.22 — Main Menu
+
+- Added the main menu with New Game, Continue, Settings and Exit screens.
+- Continue opens the unlocked-level selector; locked levels remain visible but unavailable.
+- New Game restarts campaign progression at level 1 while preserving lifetime statistics and personal records.
+- Added persistent difficulty selection, statistics view and a double-confirmation save reset.
+- Connected game starts and deaths to SaveManager; play time is persisted periodically and when leaving the page.
+- Added a return-to-main-menu action after Game Over.
+
+## Versione 0.2.4.23 — Defeat menu fix
+- La schermata GAME OVER presenta soltanto RIPROVA (stesso livello) e MENÙ PRINCIPALE.
+- La selezione dei livelli nell'interfaccia rispetta il livello massimo sbloccato.
+- Il controllo della progressione è applicato anche all'avvio del livello, così i livelli bloccati non possono essere avviati aggirando l'interfaccia.
+- Rimossi i comandi di ripartenza alternativi dalla schermata di sconfitta: si usano i due pulsanti dedicati.
+
+
+## Versione 0.2.5.3 — Difficulty & New Game Flow
+- Normale: 30 secondi; Difficile: 40 secondi.
+- Nuova Partita confermata avvia direttamente il livello 1, senza mostrare la selezione livelli.
+- La selezione dei livelli rimane disponibile esclusivamente tramite Continua.
+
+- Rimosso il livello di difficoltà Facile: sono disponibili soltanto Normale e Difficile.
+- Normale: 5 HP e obiettivo di sopravvivenza di 30 secondi.
+- Difficile: 4 HP e obiettivo di sopravvivenza di 40 secondi.
+- Il timer è indipendente dagli FPS e usa il tempo reale trascorso durante la partita.
+- Al raggiungimento dell'obiettivo la minaccia si arresta e il personaggio corre fuori dallo schermo.
+- La vittoria viene registrata una sola volta, aggiorna le statistiche e sblocca il livello successivo.
+- La schermata di vittoria permette di avviare il livello successivo (se disponibile) oppure tornare al menù principale.
+- I salvataggi precedenti con difficoltà Facile vengono normalizzati su Normale.

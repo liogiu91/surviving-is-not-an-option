@@ -113,3 +113,311 @@
   #wrap.defeat-sequence-clean #touchControls {
     display: none !important;
   }
+
+/* Main menu and campaign interface */
+.main-menu{position:absolute;z-index:10;inset:0;display:flex;align-items:center;justify-content:center;padding:22px;background:linear-gradient(115deg,rgba(9,10,17,.94),rgba(22,13,25,.82)),radial-gradient(ellipse at 50% 0%,#70415d66,transparent 65%);backdrop-filter:blur(3px);text-align:center;overflow-y:auto}
+.main-menu.hidden{display:none}
+.menu-screen{display:none;width:min(100%,620px);max-height:100%;overflow-y:auto;padding:clamp(16px,3vw,30px);background:linear-gradient(145deg,rgba(27,27,39,.97),rgba(17,18,27,.97));border:1px solid #b77b9b88;border-radius:12px;box-shadow:0 18px 65px #000c,inset 0 1px #ffffff12}
+.menu-screen.active{display:block;animation:menuFade .22s ease-out}
+@keyframes menuFade{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+.menu-kicker{font:700 10px/1.4 system-ui,sans-serif;letter-spacing:.28em;color:#e5a8c4;margin-bottom:10px}
+.menu-screen h2{font:800 clamp(22px,4vw,34px)/1.12 Georgia,serif;letter-spacing:.12em;margin:0 0 10px;color:#fff1f6}
+.menu-screen h2 span{color:#e9a9c2}
+.menu-tagline{font:11px system-ui,sans-serif;letter-spacing:.2em;color:#bdb0bb;margin:14px 0 24px!important}
+.menu-description{max-width:470px;margin:8px auto 20px!important;color:#d0c9d2;font:13px/1.55 system-ui,sans-serif}
+.main-menu-actions{display:grid;gap:9px;width:min(100%,310px);margin:0 auto}
+.main-menu button{min-height:42px;padding:11px 16px;font:800 11px system-ui,sans-serif;letter-spacing:.12em;border:1px solid #f5c5d8;background:linear-gradient(180deg,#f0b7ce,#d98eae);color:#26151f;box-shadow:0 3px 0 #75435a;transition:transform .12s,filter .12s,background .12s}
+.main-menu button:hover{filter:brightness(1.12);transform:translateY(-1px)}
+.main-menu button:active{transform:translateY(1px);box-shadow:0 1px 0 #75435a}
+.main-menu button.secondary{background:#292936;color:#eee2e9;border:1px solid #716274;box-shadow:0 3px 0 #11121a}
+.main-menu button.danger{background:linear-gradient(180deg,#b84c61,#842d43);border-color:#df8294;color:#fff;box-shadow:0 3px 0 #431b2a}
+.menu-save-status{margin-top:20px;color:#9b91a0;font:9px system-ui,sans-serif;letter-spacing:.18em}
+.level-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:20px 0}
+.level-card{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-height:104px!important;text-align:left!important;padding:14px!important;background:linear-gradient(145deg,#36303e,#242431)!important;color:#f8edf3!important;border:1px solid #8c7488!important;box-shadow:0 3px 0 #111!important}
+.level-card .level-number{font:700 10px system-ui,sans-serif;color:#e9a9c2;letter-spacing:.2em}
+.level-card strong{font:800 14px Georgia,serif;letter-spacing:.08em}
+.level-card small{font:9px system-ui,sans-serif;letter-spacing:.14em;color:#a9d7b6}
+.level-card.locked{filter:grayscale(.8);opacity:.48;cursor:not-allowed;background:#24242b!important;border-color:#514d57!important}
+.level-card.locked small{color:#d49aa4}
+.level-card:not(.locked):hover{border-color:#f1b5ce!important;background:linear-gradient(145deg,#554052,#302b3a)!important}
+.back-button{margin-top:10px;min-width:150px}
+.settings-block{margin:24px auto 18px;max-width:430px;padding:16px;background:#ffffff08;border:1px solid #ffffff18;border-radius:8px}
+.settings-label{font:700 10px system-ui,sans-serif;letter-spacing:.2em;color:#c6b8c5;margin-bottom:12px}
+.settings-difficulty{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+.main-menu .settings-difficulty button{padding:10px 5px;font-size:10px;background:#302d38;color:#eee;border:1px solid #665c6a;box-shadow:none}
+.main-menu .settings-difficulty button.selected{background:#e9a9c2;color:#21151d;border-color:#ffd4e3}
+.settings-actions,.confirm-actions{display:grid;gap:9px;max-width:330px;margin:0 auto}
+.stats-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:20px 0 14px}
+.stat-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:88px;padding:10px 5px;background:#ffffff09;border:1px solid #ffffff20;border-radius:7px}
+.stat-icon{font:20px Georgia,serif;color:#e9a9c2}
+.stat-card strong{font:700 clamp(17px,3vw,23px) system-ui,sans-serif;color:#fff;overflow-wrap:anywhere}
+.stat-card small{font:8px system-ui,sans-serif;letter-spacing:.12em;color:#b8aeb9}
+.level-stats{margin:12px 0 4px;text-align:left;font:11px/1.6 system-ui,sans-serif;color:#d3cbd4}
+.level-stats-row{display:flex;justify-content:space-between;gap:10px;padding:6px 2px;border-bottom:1px solid #ffffff16}
+#returnToMenu{display:none;margin:10px auto 0}
+#overlay.game-over-menu #returnToMenu{display:block}
+@media(max-width:700px){.main-menu{padding:7px}.menu-screen{padding:14px;border-radius:8px}.menu-screen h2{font-size:clamp(18px,5vw,25px)}.menu-kicker{font-size:8px;margin-bottom:6px}.menu-tagline{margin:8px 0 14px!important;font-size:9px}.main-menu button{min-height:36px;padding:8px 10px;font-size:10px}.level-cards{gap:7px;margin:12px 0}.level-card{min-height:78px!important;padding:10px!important}.level-card strong{font-size:12px}.stats-grid{gap:5px;margin:12px 0}.stat-card{min-height:70px}.stat-card small{font-size:7px}.settings-block{margin:12px auto;padding:11px}}
+
+
+/* Defeat panel: only retry the current level or return to the main menu. */
+#overlay.game-over-menu .panel > .sub,
+#overlay.game-over-menu .panel > .level-select,
+#overlay.game-over-menu .panel > .difficulty,
+#overlay.game-over-menu .panel > p:nth-of-type(2) {
+  display:none !important;
+}
+#overlay.game-over-menu .panel > #start,
+#overlay.game-over-menu .panel > #returnToMenu {
+  display:block;
+  min-width:190px;
+  margin:12px auto 0;
+}
+#overlay.game-over-menu .panel > #returnToMenu { margin-top:9px; }
+#overlay.game-over-menu .panel { width:min(94%,440px); }
+
+/* Victory panel: the player has escaped and can advance or return to the campaign menu. */
+#victoryNext,#victoryMenu{display:none;margin:10px auto 0;min-width:190px;}
+#overlay.victory-menu #start,
+#overlay.victory-menu #returnToMenu{display:none!important;}
+#overlay.victory-menu #victoryNext,
+#overlay.victory-menu #victoryMenu{display:block;}
+#overlay.victory-menu .panel > .sub,
+#overlay.victory-menu .panel > .level-select,
+#overlay.victory-menu .panel > .difficulty,
+#overlay.victory-menu .panel > p:nth-of-type(2){display:none!important;}
+#overlay.victory-menu .panel{width:min(94%,440px);}
+
+
+/* v0.2.5.5 — illustrated main menu treatment */
+#wrap:has(#mainMenu:not(.hidden)) > header,
+#wrap:has(#mainMenu:not(.hidden)) > footer { display:none !important; }
+#wrap:has(#mainMenu:not(.hidden)) { width:min(100vw, 1200px); padding:8px; }
+#wrap:has(#mainMenu:not(.hidden)) #gamebox {
+  border:1px solid #5d252d;
+  box-shadow:0 20px 80px #000e, 0 0 0 1px #c34a4a33;
+}
+#mainMenu.main-menu {
+  align-items:stretch;
+  justify-content:flex-start;
+  padding:0;
+  text-align:left;
+  overflow:hidden;
+  background:
+    linear-gradient(90deg,rgba(8,7,10,.28) 0%,rgba(8,7,10,.08) 42%,transparent 68%),
+    linear-gradient(0deg,rgba(8,6,8,.18),transparent 45%),
+    url('../assets/backgrounds/menu-main.webp') center center / cover no-repeat;
+  backdrop-filter:none;
+}
+#mainMenu .menu-screen { display:none; }
+#mainMenu .menu-screen.active { display:block; }
+#mainMenu .menu-screen[data-screen="home"] {
+  position:absolute;
+  left:2.6%;
+  top:36%;
+  width:min(31%,360px);
+  max-height:62%;
+  overflow-y:auto;
+  padding:0;
+  background:transparent;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+  animation:menuFade .28s ease-out;
+}
+#mainMenu .main-menu-actions {
+  width:100%;
+  margin:0;
+  gap:8px;
+}
+#mainMenu .menu-save-status {
+  margin:13px 0 0 3px;
+  color:#d2b9b5;
+  font-size:8px;
+  text-shadow:0 2px 5px #000;
+}
+#mainMenu button {
+  position:relative;
+  min-height:43px;
+  padding:11px 16px 11px 20px;
+  text-align:left;
+  font:800 11px/1.2 system-ui,sans-serif;
+  letter-spacing:.16em;
+  color:#f8eeee;
+  background:linear-gradient(100deg,rgba(25,17,20,.96),rgba(45,22,27,.91));
+  border:1px solid #a94b50;
+  border-left:4px solid #c83e48;
+  border-radius:2px;
+  box-shadow:0 4px 0 rgba(0,0,0,.65), inset 0 1px rgba(255,255,255,.08);
+  text-shadow:0 1px 3px #000;
+  transition:transform .14s ease,filter .14s ease,border-color .14s ease,background .14s ease;
+}
+#mainMenu button:hover:not(:disabled) {
+  filter:brightness(1.22);
+  transform:translateX(4px);
+  border-color:#f08a83;
+  border-left-color:#ff5a5a;
+  background:linear-gradient(100deg,rgba(68,24,29,.98),rgba(37,19,24,.96));
+}
+#mainMenu button:active:not(:disabled) { transform:translateX(2px) translateY(2px); box-shadow:0 1px 0 #000; }
+#mainMenu button.secondary {
+  color:#e8dadd;
+  background:linear-gradient(100deg,rgba(15,15,19,.94),rgba(29,25,30,.9));
+  border-color:#665056;
+  border-left-color:#87343e;
+  box-shadow:0 4px 0 rgba(0,0,0,.62),inset 0 1px rgba(255,255,255,.06);
+}
+#mainMenu button.danger {
+  color:#fff;
+  background:linear-gradient(100deg,rgba(92,20,31,.98),rgba(48,15,22,.96));
+  border-color:#d46a70;
+  border-left-color:#ff3e4c;
+}
+/* Secondary menu pages retain the same dark-red visual language. */
+#mainMenu .menu-screen:not([data-screen="home"]) {
+  position:relative;
+  width:min(92%,620px);
+  max-height:calc(100% - 28px);
+  margin:auto;
+  padding:clamp(16px,3vw,30px);
+  text-align:center;
+  background:linear-gradient(145deg,rgba(15,12,16,.96),rgba(23,15,20,.94));
+  border:1px solid #9b454d;
+  border-radius:4px;
+  box-shadow:0 18px 65px #000d,inset 0 1px #ffffff12;
+}
+#mainMenu .menu-screen:not([data-screen="home"]) h2 { color:#fff0ee; }
+#mainMenu .menu-kicker { color:#ef8580; }
+#mainMenu .menu-tagline { color:#d5b9b9; }
+#mainMenu .level-card { text-align:left; }
+@media(max-width:700px) {
+  #wrap:has(#mainMenu:not(.hidden)) { width:min(100vw, calc((100dvh - 8px) * 1.6)); padding:4px; }
+  #mainMenu.main-menu { background-position:center center; }
+  #mainMenu .menu-screen[data-screen="home"] {
+    left:2.5%; top:37%; width:min(34%,250px); max-height:61%;
+  }
+  #mainMenu .main-menu-actions { gap:5px; }
+  #mainMenu button { min-height:34px; padding:7px 8px 7px 11px; font-size:clamp(7px,1.5vw,10px); letter-spacing:.1em; border-left-width:3px; }
+  #mainMenu .menu-save-status { font-size:6px; margin-top:7px; }
+}
+@media(max-width:420px) and (orientation:portrait) {
+  #mainMenu .menu-screen[data-screen="home"] { top:35%; width:36%; }
+  #mainMenu button { min-height:30px; font-size:7px; }
+}
+
+/* v0.2.5.6 — unify the red/black cinematic button language across every UI. */
+#overlay .panel {
+  background:linear-gradient(145deg,rgba(17,12,15,.97),rgba(28,15,20,.96));
+  border:1px solid #9b454d;
+  border-radius:4px;
+  box-shadow:0 18px 65px #000e,0 0 0 1px #c34a4a22,inset 0 1px #ffffff12;
+}
+#overlay .panel h2 { color:#fff0ee; font-family:Georgia,serif; }
+#overlay .panel .sub { color:#d69a98; }
+#overlay .panel p { color:#e0d2d0; }
+#overlay button:not(.touchbtn) {
+  position:relative;
+  min-height:39px;
+  padding:10px 15px 10px 18px;
+  color:#f8eeee;
+  font:800 10px/1.25 system-ui,sans-serif;
+  letter-spacing:.12em;
+  text-align:center;
+  background:linear-gradient(100deg,rgba(25,17,20,.97),rgba(53,23,29,.94));
+  border:1px solid #a94b50;
+  border-left:4px solid #c83e48;
+  border-radius:2px;
+  box-shadow:0 4px 0 rgba(0,0,0,.65),inset 0 1px rgba(255,255,255,.08);
+  text-shadow:0 1px 3px #000;
+  transition:transform .14s ease,filter .14s ease,border-color .14s ease,background .14s ease;
+}
+#overlay button:not(.touchbtn):hover:not(:disabled) {
+  filter:brightness(1.2);
+  transform:translateY(-1px);
+  border-color:#f08a83;
+  border-left-color:#ff5a5a;
+  background:linear-gradient(100deg,rgba(68,24,29,.99),rgba(44,19,25,.97));
+}
+#overlay button:not(.touchbtn):active:not(:disabled) {
+  transform:translateY(2px);
+  box-shadow:0 1px 0 #000;
+}
+#overlay button:not(.touchbtn):disabled {
+  opacity:.38;
+  filter:grayscale(1);
+  cursor:not-allowed;
+}
+#overlay button.secondary,
+#overlay #returnToMenu,
+#overlay #victoryMenu {
+  color:#e8dadd;
+  background:linear-gradient(100deg,rgba(15,15,19,.96),rgba(29,25,30,.94));
+  border-color:#665056;
+  border-left-color:#87343e;
+}
+#overlay .difficulty button.selected {
+  color:#fff;
+  background:linear-gradient(100deg,#702b35,#3b1821);
+  border-color:#e17a7e;
+  border-left-color:#ff6668;
+  box-shadow:0 0 0 1px #d45b6233,0 4px 0 rgba(0,0,0,.65),inset 0 0 16px #c33b4822;
+}
+#overlay .level-select button { font-size:9px; padding:8px 10px; }
+#overlay #start,
+#overlay #victoryNext { min-width:190px; }
+
+/* Continue screen: use each level's own scene as a cinematic thumbnail. */
+#mainMenu .level-cards { gap:12px; }
+#mainMenu .level-card {
+  min-height:96px !important;
+  justify-content:flex-end;
+  overflow:hidden;
+  background-position:center;
+  background-size:100% 100%;
+  background-repeat:no-repeat;
+  border:1px solid #a94b50 !important;
+  border-left:4px solid #c83e48 !important;
+  box-shadow:0 5px 0 #080608, inset 0 -54px 35px rgba(0,0,0,.85) !important;
+  text-shadow:0 2px 4px #000;
+  transition:transform .16s ease,filter .16s ease,border-color .16s ease;
+}
+#mainMenu .level-card:nth-child(1) {
+  background-image:linear-gradient(0deg,rgba(8,5,8,.94),rgba(8,5,8,.06) 78%),url('../assets/backgrounds/gym-card.webp') !important;
+}
+#mainMenu .level-card:nth-child(2) {
+  background-image:linear-gradient(0deg,rgba(8,5,8,.94),rgba(8,5,8,.06) 78%),url('../assets/backgrounds/office-card.webp') !important;
+}
+#mainMenu .level-card:nth-child(3) {
+  background-image:linear-gradient(0deg,rgba(8,5,8,.94),rgba(8,5,8,.06) 78%),url('../assets/backgrounds/classroom-card.webp') !important;
+}
+#mainMenu .level-card:nth-child(4) {
+  background-image:linear-gradient(0deg,rgba(8,5,8,.94),rgba(8,5,8,.06) 78%),url('../assets/backgrounds/pool-card.webp') !important;
+}
+#mainMenu .level-card:not(.locked):hover {
+  transform:translateY(-2px);
+  filter:brightness(1.16);
+  border-color:#f08a83 !important;
+  border-left-color:#ff5a5a !important;
+}
+#mainMenu .level-card .level-number { color:#ffaaa4; }
+#mainMenu .level-card strong { color:#fff4f1; font-size:15px; }
+#mainMenu .level-card small { color:#ffd2c7; font-weight:800; }
+#mainMenu .level-card.locked {
+  filter:grayscale(.9) brightness(.58);
+  opacity:.62;
+  border-color:#625257 !important;
+  border-left-color:#704047 !important;
+}
+#mainMenu .level-card.locked small { color:#e0a5a5; }
+#mainMenu .settings-difficulty button.selected {
+  color:#fff !important;
+  background:linear-gradient(100deg,#702b35,#3b1821) !important;
+  border-color:#e17a7e !important;
+  border-left:4px solid #ff6668 !important;
+  box-shadow:0 0 0 1px #d45b6233,0 3px 0 #080608 !important;
+}
+@media(max-width:700px) {
+  #mainMenu .level-cards { gap:7px; }
+  #mainMenu .level-card { min-height:76px !important; }
+  #mainMenu .level-card strong { font-size:11px; }
+  #overlay button:not(.touchbtn) { min-height:34px; padding:8px 10px 8px 12px; font-size:9px; }
+}

@@ -15,6 +15,7 @@ import {
   poolFinisherSprite, POOL_FINISHER_FRAME_W, POOL_FINISHER_FRAME_H, POOL_FINISHER_FRAMES
 } from './assets.js';
 import { W, H, WORLD_W, difficulties, MAX_STAMINA, clamp } from './config.js';
+import { SaveManager } from './saveManager.js';
 import { gymLevel } from './levels/gym.js';
 import { officeLevel } from './levels/office.js';
 import { classroomLevel } from './levels/classroom.js';
@@ -29,13 +30,18 @@ let cameraX=0;
 const keys={}; let sprintHeld=false; let running=false, dead=false, startTime=0, last=0, elapsed=0, best=0;
 let player, shoe, particles=[], stain=null, deathTimer=0, flash=0, safeTime=0, stepCount=0;
 let defeatPhase='none', defeatTimer=0;
-let difficulty='normal', maxHp=3, hp=3;
-let selectedLevel=1;
+let victoryPhase='none', victoryTimer=0;
+let difficulty=SaveManager.getDifficulty(), maxHp=3, hp=3;
+let selectedLevel=SaveManager.getSelectedLevel();
+let unsavedPlayTime=0;
 const LEVELS = {1:gymLevel, 2:officeLevel, 3:classroomLevel, 4:poolLevel};
 const getLevel = () => LEVELS[selectedLevel] || gymLevel;
 let stamina=MAX_STAMINA, sprintLocked=false;
 document.querySelectorAll('[data-level]').forEach(btn=>btn.addEventListener('click',()=>{
- selectedLevel=Number(btn.dataset.level);
+ const requestedLevel=Number(btn.dataset.level);
+ if(!Number.isInteger(requestedLevel) || requestedLevel<1 || requestedLevel>SaveManager.getUnlockedLevel())return;
+ if(!SaveManager.selectLevel(requestedLevel))return;
+ selectedLevel=requestedLevel;
  document.querySelectorAll('[data-level]').forEach(b=>b.classList.toggle('selected',b===btn));
  const title=document.getElementById('menuTitle');
  if(title)title.textContent=getLevel().title;
@@ -44,6 +50,7 @@ document.querySelectorAll('[data-level]').forEach(btn=>btn.addEventListener('cli
 }));
 document.querySelectorAll('[data-diff]').forEach(btn=>btn.addEventListener('click',()=>{
  difficulty=btn.dataset.diff;
+ SaveManager.setDifficulty(difficulty);
  document.querySelectorAll('[data-diff]').forEach(b=>b.classList.toggle('selected',b===btn));
 }));
 function updateHealthUI(){
@@ -63,17 +70,69 @@ function reset(){
   player={x:475,y:559,r:8,speed:270,inv:0,anim:0,state:'idle',stateT:0};
  stamina=MAX_STAMINA;sprintLocked=false;cameraX=0;
  shoe={x:690,y:270,tx:475,ty:270,phase:'lift',t:0,step:0,scale:1,aimTimer:0,speed:310,aiMode:'hunt',aiModeT:0,aiCooldown:1.8,aiBurst:0,aiTell:0};
- particles=[]; stain=null; deathTimer=0; flash=0; safeTime=0; elapsed=0; stepCount=0; dead=false; defeatPhase='none';defeatTimer=0;
+ particles=[]; stain=null; deathTimer=0; flash=0; safeTime=0; elapsed=0; stepCount=0; dead=false; defeatPhase='none';defeatTimer=0; victoryPhase='none';victoryTimer=0;
  updateHealthUI();updateStaminaUI();
 }
-function start(){
+function start(level=selectedLevel){
+ const requestedLevel=Math.floor(Number(level));
+ // Enforce progression in the gameplay entry point as well as in the UI.
+ // A locked level can never start, even if another caller bypasses the menu.
+ if(!Number.isInteger(requestedLevel) || requestedLevel<1 || requestedLevel>SaveManager.getUnlockedLevel())return false;
+ if(!SaveManager.selectLevel(requestedLevel))return false;
+ selectedLevel=requestedLevel;
+ difficulty=SaveManager.getDifficulty();
+ SaveManager.recordLevelStart(selectedLevel);
+ unsavedPlayTime=0;
  document.getElementById('wrap').classList.remove('defeat-sequence-clean');
  sprintHeld=false;keys.shift=false;reset();running=true;startTime=performance.now();last=startTime;overlay.classList.add('hidden');
+ overlay.classList.remove('game-over-menu','victory-menu');
+ const mainMenu=document.getElementById('mainMenu');if(mainMenu)mainMenu.classList.add('hidden');
+ document.getElementById('victoryNext').style.display='none';
+ document.querySelectorAll('[data-level]').forEach(b=>b.classList.toggle('selected',Number(b.dataset.level)===selectedLevel));
+ document.querySelectorAll('[data-diff]').forEach(b=>b.classList.toggle('selected',b.dataset.diff===difficulty));
  const subtitle=document.querySelector('header .sub');
  if(subtitle)subtitle.textContent=getLevel().subtitle;
+ return true;
 }
-document.getElementById('start').onclick=start;
-window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(['arrowleft','arrowright',' '].includes(e.key.toLowerCase()))e.preventDefault();if(defeatPhase==='wait'){showGameOver();return;}if(e.key.toLowerCase()==='r' && (dead||!running)&&defeatPhase!=='intro')start();});
+document.getElementById('start').onclick=()=>start(selectedLevel);
+document.getElementById('victoryNext').onclick=()=>{
+ const nextLevel=selectedLevel+1;
+ if(nextLevel<=SaveManager.getUnlockedLevel())start(nextLevel);
+};
+document.getElementById('victoryMenu').onclick=()=>window.dispatchEvent(new CustomEvent('siota:show-main-menu'));
+window.SIOTA={startLevel:(level)=>start(level),pause:()=>{running=false;}};
+
+// Freeze the complete game simulation whenever the page is hidden. The
+// survival clock is based on performance.now(), so shift its origin by the
+// hidden duration when the player returns; this prevents background time
+// from counting toward a win. The same pause also freezes the victory escape.
+let backgroundPaused=false;
+let backgroundPauseStartedAt=0;
+function clearGameplayInput(){
+ Object.keys(keys).forEach(key=>keys[key]=false);
+ sprintHeld=false;
+ if(typeof activeControlPointers!=='undefined'){
+  activeControlPointers.clear();
+  if(typeof refreshTouchKeys==='function')refreshTouchKeys();
+ }
+}
+document.addEventListener('visibilitychange',()=>{
+ if(document.hidden){
+  if(!backgroundPaused && (running || victoryPhase==='run')){
+   backgroundPaused=true;
+   backgroundPauseStartedAt=performance.now();
+   clearGameplayInput();
+  }
+  return;
+ }
+ if(backgroundPaused){
+  const pausedDuration=performance.now()-backgroundPauseStartedAt;
+  if(running)startTime+=pausedDuration;
+  backgroundPaused=false;
+  last=performance.now(); // discard the long frame accumulated while hidden
+ }
+});
+window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(['arrowleft','arrowright',' '].includes(e.key.toLowerCase()))e.preventDefault();if(defeatPhase==='wait'){showGameOver();return;}});
 canvas.addEventListener('pointerdown',()=>{if(defeatPhase==='wait')showGameOver();});
 window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 // Robust keyboard + touch input. Pointer capture keeps a held button active
@@ -127,6 +186,7 @@ if(touchControls){
  touchControls.addEventListener('pointercancel',endPointer);
  touchControls.addEventListener('lostpointercapture',endPointer);
 }
+window.addEventListener('pagehide',()=>{if(unsavedPlayTime>0){SaveManager.addPlayTime(unsavedPlayTime);unsavedPlayTime=0;}});
 window.addEventListener('blur',()=>{Object.keys(keys).forEach(k=>keys[k]=false);sprintHeld=false;activeControlPointers.clear();document.querySelectorAll('.touchbtn').forEach(b=>b.classList.remove('pressed','active-sprint'));});
 function rounded(x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.stroke();}}
 
@@ -310,9 +370,47 @@ function spawnStain(){
  stain={x:impactX,y:495,r:7,alpha:1,shoeResidue:true}; // Blood effects share the planted-sole ground reference Y=555.
  for(let i=0;i<34;i++){let a=Math.random()*Math.PI*2,s=30+Math.random()*150;particles.push({x:impactX,y:player.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.6+Math.random()*.8,max:1.4,r:1+Math.random()*4});}
 }
+function survivalTargetSeconds(){return difficulties[difficulty].survivalSeconds;}
+function beginVictory(){
+ if(victoryPhase!=='none'||dead)return;
+ elapsed=survivalTargetSeconds();
+ running=false;victoryPhase='run';victoryTimer=0;
+ Object.keys(keys).forEach(key=>keys[key]=false);sprintHeld=false;
+ player.state='idle';player.stateT=0;player.facing=1;player.sprinting=true;player.moveVX=520;player.moveVY=0;
+ shoe.aiMode='stopped';
+}
+function finishVictory(){
+ if(victoryPhase!=='run')return;
+ victoryPhase='complete';
+ if(unsavedPlayTime>0){SaveManager.addPlayTime(unsavedPlayTime);unsavedPlayTime=0;}
+ SaveManager.recordVictory(selectedLevel,elapsed);
+ const nextLevel=selectedLevel+1;
+ const hasNext=nextLevel<=SaveManager.getUnlockedLevel() && nextLevel<=4;
+ overlay.classList.remove('game-over-menu');
+ overlay.classList.add('victory-menu');
+ overlay.classList.remove('hidden');
+ overlay.querySelector('h2').textContent=selectedLevel===4?'CAMPAGNA COMPLETATA':'LIVELLO COMPLETATO';
+ overlay.querySelector('p').textContent=selectedLevel===4
+   ? 'Hai superato tutti i livelli disponibili. Sei riuscito a sopravvivere!'
+   : `Sei sopravvissuto per ${survivalTargetSeconds()} secondi. Il livello ${nextLevel} è stato sbloccato!`;
+ document.getElementById('start').textContent='RIPROVA';
+ document.getElementById('victoryNext').style.display=hasNext?'block':'none';
+ document.getElementById('victoryMenu').textContent='MENÙ PRINCIPALE';
+}
 function update(dt){
- if(!running||dead)return;
+ if(victoryPhase==='run'){
+   victoryTimer+=dt;unsavedPlayTime+=dt;
+   if(unsavedPlayTime>=10){SaveManager.addPlayTime(unsavedPlayTime);unsavedPlayTime=0;}
+   player.x+=520*dt;player.facing=1;player.sprinting=true;player.moveVX=520;player.anim=(player.anim||0)+dt*1.45;
+   cameraX+=(clamp(player.x-W/2,0,WORLD_W-W)-cameraX)*Math.min(1,dt*5);
+   if(player.x>WORLD_W+90)finishVictory();
+   return;
+ }
+ if(!running||dead||victoryPhase!=='none')return;
  elapsed=(performance.now()-startTime)/1000;
+ if(elapsed>=survivalTargetSeconds()){beginVictory();return;}
+ unsavedPlayTime+=dt;
+ if(unsavedPlayTime>=10){SaveManager.addPlayTime(unsavedPlayTime);unsavedPlayTime=0;}
  player.inv=Math.max(0,player.inv-dt);
  const vx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0);
  const sprintRequested=(!!keys.shift || sprintHeld) && vx!==0;
@@ -337,7 +435,7 @@ function update(dt){
  if(player.state==='squashed'){player.stateT+=dt;}
  player.x=clamp(player.x,28,WORLD_W-28);
  // Adaptive hunt: variable pace, readable bursts and recovery windows.
- const baseSpeed=difficulty==='easy'?238:(difficulty==='hard'?340:292);
+ const baseSpeed=difficulty==='hard'?340:292;
  const dxToPlayer=player.x-shoe.x, gap=Math.abs(dxToPlayer);
  shoe.aiCooldown=Math.max(0,shoe.aiCooldown-dt);
  shoe.aiTell=Math.max(0,shoe.aiTell-dt);
@@ -349,8 +447,8 @@ function update(dt){
      shoe.recovering=false;
      shoe.aiMode='hunt';
      // If the player has opened a large gap, the hunt can trigger a catch-up burst.
-     const farChance=difficulty==='easy'?.34:(difficulty==='hard'?.78:.62);
-     const nearChance=difficulty==='easy'?.12:(difficulty==='hard'?.34:.23);
+     const farChance=difficulty==='hard'?.78:.62;
+     const nearChance=difficulty==='hard'?.34:.23;
      if(shoe.aiCooldown<=0 && Math.random()<(gap>520?farChance:(gap<230?nearChance:.38))){
        if(gap>520){
          shoe.aiMode='predator';shoe.aiModeT=difficulty==='hard'?1.55:1.25;
@@ -361,17 +459,17 @@ function update(dt){
          shoe.aiMode='surge';shoe.aiModeT=.72+Math.random()*.38;
          shoe.aiTell=.2;
        }
-       shoe.aiCooldown=difficulty==='easy'?5.8:(difficulty==='hard'?3.6:4.6);
+       shoe.aiCooldown=difficulty==='hard'?3.6:4.6;
      }else{
        shoe.aiMode='hunt';shoe.aiModeT=.6+Math.random()*1.1;
      }
-     const lead=difficulty==='hard'?.58:(difficulty==='easy'?.22:.4);
+     const lead=difficulty==='hard'?.58:.4;
      shoe.tx=clamp(player.x+(player.moveVX||0)*lead,100,WORLD_W-100);
    }
  } else if(shoe.phase==='move'){
    shoe.aimTimer-=dt;
    if(shoe.aimTimer<=0){
-     const lead=difficulty==='hard'?.62:(difficulty==='easy'?.2:.42);
+     const lead=difficulty==='hard'?.62:.42;
      // Feints briefly predict less accurately; other modes actively lead the runner.
      const feintFactor=shoe.aiMode==='feint'?.12:1;
      shoe.tx=clamp(player.x+(player.moveVX||0)*lead*feintFactor,100,WORLD_W-100);
@@ -482,6 +580,8 @@ function takeDamage(){
 }
 function die(contactX=player?.x??shoe.x){
  dead=true;running=false;deathTimer=0;defeatPhase='none';defeatTimer=0;
+ if(unsavedPlayTime>0){SaveManager.addPlayTime(unsavedPlayTime);unsavedPlayTime=0;}
+ SaveManager.recordDeath(selectedLevel,elapsed);
  if(typeof shoe.attackFacesRight!=='boolean')shoe.attackFacesRight=selectedLevel===4 ? player.x<shoe.x : player.x>shoe.x;
  shoe.phase='press';shoe.t=0;shoe.recovering=true;
  // Keep the shoe anchored where it actually landed; store the victim position
@@ -828,10 +928,13 @@ function showGameOver(){
  document.getElementById('wrap').classList.remove('defeat-sequence-clean');
  defeatPhase='menu';
  overlay.classList.remove('hidden');
+ overlay.classList.remove('victory-menu');
+ overlay.classList.add('game-over-menu');
  overlay.querySelector('h2').textContent='GAME OVER';
- overlay.querySelector('p').textContent='Hai esaurito i punti vita. Hai resistito '+elapsed.toFixed(1)+' secondi in modalità '+difficulties[difficulty].label+'. Vuoi tentare di nuovo?';
- overlay.querySelectorAll('p')[1].textContent='Premi R oppure ricomincia.';
+ overlay.querySelector('p').textContent='Hai esaurito i punti vita. Hai resistito '+elapsed.toFixed(1)+' secondi in modalità '+difficulties[difficulty].label+'.';
  document.getElementById('start').textContent='RIPROVA';
+ const returnButton=document.getElementById('returnToMenu');
+ if(returnButton)returnButton.textContent='MENÙ PRINCIPALE';
 }
 function draw(){
  ctx.clearRect(0,0,W,H);drawFloor(cameraX);ctx.save();ctx.translate(-cameraX,0);
@@ -883,10 +986,15 @@ function draw(){
    ctx.globalAlpha=1;
  }
  ctx.restore();
- document.getElementById('score').textContent='TEMPO: '+elapsed.toFixed(1)+' s';
+ document.getElementById('score').textContent='RESISTI: '+Math.max(0,survivalTargetSeconds()-elapsed).toFixed(1)+' s';
  document.getElementById('healthText').textContent=hp+' / '+maxHp;
 }
 
-function loop(t){let dt=Math.min(.04,(t-last)/1000||0);last=t;update(dt);draw();if(dead&&defeatPhase==='none'&&deathTimer>getLevel().defeatDelay){defeatPhase='intro';defeatTimer=0;}requestAnimationFrame(loop);}
+function loop(t){
+ if(backgroundPaused){last=t;requestAnimationFrame(loop);return;}
+ let dt=Math.min(.04,(t-last)/1000||0);last=t;update(dt);draw();
+ if(dead&&defeatPhase==='none'&&deathTimer>getLevel().defeatDelay){defeatPhase='intro';defeatTimer=0;}
+ requestAnimationFrame(loop);
+}
 reset();requestAnimationFrame(loop);
 })();
