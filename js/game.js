@@ -1,6 +1,6 @@
 import {
   giantessSprite, officeShoeSprite, officeTwistSprite,
-  officeDefeatImage, gymDefeatImage, classroomDefeatImage,
+  officeDefeatImage, gymDefeatImage, classroomDefeatImage, poolDefeatImage,
   OFFICE_FRAME_W, OFFICE_FRAME_H, OFFICE_TWIST_FRAME_W, OFFICE_TWIST_FRAME_H, OFFICE_TWIST_FRAMES,
   classroomShoeSprite, classroomInspectionExtendedSprite,
   CLASSROOM_FRAME_W, CLASSROOM_FRAME_H,
@@ -10,12 +10,15 @@ import {
   STICKY_BLOOD_FRAME_W, STICKY_BLOOD_FRAME_H, STICKY_BLOOD_FRAMES,
   FX_IMPACT_W, FX_POOL_W,
   gymBackground, officeBackground, classroomBackground,
-  classroomBloodDragSprite, CLASSROOM_BLOOD_FRAME_W, CLASSROOM_BLOOD_FRAME_H
+  classroomBloodDragSprite, CLASSROOM_BLOOD_FRAME_W, CLASSROOM_BLOOD_FRAME_H,
+  poolBackground, poolWedgeSprite, POOL_FRAME_W, POOL_FRAME_H, POOL_FRAMES,
+  poolFinisherSprite, POOL_FINISHER_FRAME_W, POOL_FINISHER_FRAME_H, POOL_FINISHER_FRAMES
 } from './assets.js';
 import { W, H, WORLD_W, difficulties, MAX_STAMINA, clamp } from './config.js';
 import { gymLevel } from './levels/gym.js';
 import { officeLevel } from './levels/office.js';
 import { classroomLevel } from './levels/classroom.js';
+import { poolLevel } from './levels/pool.js';
 
 (() => {
 const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
@@ -28,14 +31,14 @@ let player, shoe, particles=[], stain=null, deathTimer=0, flash=0, safeTime=0, s
 let defeatPhase='none', defeatTimer=0;
 let difficulty='normal', maxHp=3, hp=3;
 let selectedLevel=1;
-const LEVELS = {1:gymLevel, 2:officeLevel, 3:classroomLevel};
+const LEVELS = {1:gymLevel, 2:officeLevel, 3:classroomLevel, 4:poolLevel};
 const getLevel = () => LEVELS[selectedLevel] || gymLevel;
 let stamina=MAX_STAMINA, sprintLocked=false;
 document.querySelectorAll('[data-level]').forEach(btn=>btn.addEventListener('click',()=>{
  selectedLevel=Number(btn.dataset.level);
  document.querySelectorAll('[data-level]').forEach(b=>b.classList.toggle('selected',b===btn));
  const title=document.getElementById('menuTitle');
- if(title)title.textContent=selectedLevel===1?'Palestra':selectedLevel===2?'Ufficio':'Aula 5F';
+ if(title)title.textContent=getLevel().title;
  const p=overlay.querySelector('p');
  if(p)p.textContent=getLevel().intro;
 }));
@@ -129,7 +132,7 @@ function rounded(x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.roundRect(x,y,w,h,r)
 
 function drawFloor(cam=0){
   // La palestra originale resta invariata; il secondo livello usa soltanto il nuovo fondale ufficio.
-  const bg = getLevel().id===3 ? classroomBackground : getLevel().id===2 ? officeBackground : gymBackground;
+  const bg = getLevel().id===4 ? poolBackground : getLevel().id===3 ? classroomBackground : getLevel().id===2 ? officeBackground : gymBackground;
   if (bg.complete && bg.naturalWidth > 0) {
     ctx.drawImage(bg, -cam, 0, WORLD_W, H);
   } else {
@@ -178,7 +181,7 @@ function shoeFacesRight(){
    return shoe.attackFacesRight;
  }
  const targetX=player?.x??shoe?.x??0;
- return targetX>shoe.x;
+ return selectedLevel===4 ? targetX<shoe.x : targetX>shoe.x;
 }
 function shoeShape(x,groundY,angle,scale,alpha=1){
  ctx.save();
@@ -187,7 +190,31 @@ function shoeShape(x,groundY,angle,scale,alpha=1){
  // The source sprite points left: mirror it only when the player is to the right.
  if(shoeFacesRight())ctx.scale(-1,1);
  ctx.globalAlpha=alpha;
- if(selectedLevel===3 && classroomShoeSprite.complete && classroomShoeSprite.naturalWidth){
+ if(selectedLevel===4 && poolWedgeSprite.complete && poolWedgeSprite.naturalWidth){
+   // Piscina: otto pose della zeppa rosa, con gamba lunga e sfondo già trasparente.
+   let frame=0;
+   if(shoe.phase==='drop'){
+     frame=3-Math.min(3,Math.floor(clamp(shoe.t/.52,0,1)*4));
+   } else if(shoe.phase==='press'){
+     frame=0;
+   } else if(shoe.phase==='lift' && shoe.recovering){
+     frame=1+Math.min(4,Math.floor(clamp(shoe.t/.48,0,1)*5));
+   } else if(shoe.phase==='lift'){
+     frame=Math.min(3,Math.floor(clamp(shoe.t/.48,0,1)*4));
+   } else if(shoe.phase==='move'){
+     frame=3;
+   }
+   frame=clamp(frame,0,POOL_FRAMES-1);
+   const sx=(frame%4)*POOL_FRAME_W;
+   const sy=Math.floor(frame/4)*POOL_FRAME_H;
+   const spriteScale=scale*1.23*2.0;
+   const w=POOL_FRAME_W*spriteScale, h=POOL_FRAME_H*spriteScale;
+   const groundAlign=7*spriteScale;
+   ctx.imageSmoothingEnabled=true;
+   ctx.imageSmoothingQuality='high';
+   ctx.drawImage(poolWedgeSprite,sx,sy,POOL_FRAME_W,POOL_FRAME_H,
+     -w/2,-h+groundAlign,w,h);
+ } else if(selectedLevel===3 && classroomShoeSprite.complete && classroomShoeSprite.naturalWidth){
    // Aula 5F: 0-3 discesa punta-alta, 3 appoggio, 4-7 rialzo dal tallone.
    let frame=7;
    if(shoe.phase==='drop'){
@@ -246,6 +273,13 @@ function shoeShape(x,groundY,angle,scale,alpha=1){
 function plantedSoleOffsetY(){
  // Contact point measured at the horizontal center of the actual planted frame,
  // not at the lowest opaque pixel anywhere across the sprite.
+ if(selectedLevel===4){
+   const s=.78*1.23*2.0;
+   const h=POOL_FRAME_H*s;
+   const groundAlign=7*s;
+   const contactRow=355;
+   return -h+groundAlign+contactRow*s;
+ }
  if(selectedLevel===3){
    const s=.78*1.23*1.65;
    const h=CLASSROOM_FRAME_H*s;
@@ -356,7 +390,7 @@ function update(dt){
    if(dist<34||shoe.t>1.8){
      // Snapshot the facing at the exact start of the attack. Player direction
      // changes during the fall must not flip the shoe mid-stomp.
-     shoe.attackFacesRight=player.x>shoe.x;
+     shoe.attackFacesRight=selectedLevel===4 ? player.x<shoe.x : player.x>shoe.x;
      shoe.recovering=false;
      shoe.phase='drop';shoe.t=0;shoe.aiMode='hunt';
    }
@@ -376,6 +410,10 @@ function update(dt){
        // The heel is a lethal contact point; the forefoot keeps normal damage.
        if(heelContact)die(player.x);
        else if(soleContact)takeDamage();
+     } else if(selectedLevel===4){
+       // Piscina: zona di contatto ampia lungo il plateau e la punta della zeppa.
+       overlap=Math.abs(player.x-shoe.x)<245;
+       if(overlap)takeDamage();
      } else if(selectedLevel===3){
        // Aula 5F: contact zone spans the long Mary Jane sole and rounded toe.
        overlap=Math.abs(player.x-shoe.x)<275;
@@ -396,9 +434,11 @@ function update(dt){
  if(shoe.phase==='press' && shoe.t<.08 && !shoe.dustMade){
    shoe.dustMade=true;
    // Match the dust burst to the actual rendered shoe width for each level.
-   const dustSoleWidth=selectedLevel===3
-     ? CLASSROOM_FRAME_W*.78*1.23*1.65*.82
-     : selectedLevel===2
+   const dustSoleWidth=selectedLevel===4
+     ? POOL_FRAME_W*.78*1.23*2.0*.45*.82
+     : selectedLevel===3
+       ? CLASSROOM_FRAME_W*.78*1.23*1.65*.82
+       : selectedLevel===2
        ? OFFICE_FRAME_W*.78*1.23*1.03*.82
        : GIANTESS_FRAME_W*.78*1.23*1.65*.82;
    const dustHalfWidth=dustSoleWidth*.5;
@@ -442,7 +482,7 @@ function takeDamage(){
 }
 function die(contactX=player?.x??shoe.x){
  dead=true;running=false;deathTimer=0;defeatPhase='none';defeatTimer=0;
- if(typeof shoe.attackFacesRight!=='boolean')shoe.attackFacesRight=player.x>shoe.x;
+ if(typeof shoe.attackFacesRight!=='boolean')shoe.attackFacesRight=selectedLevel===4 ? player.x<shoe.x : player.x>shoe.x;
  shoe.phase='press';shoe.t=0;shoe.recovering=true;
  // Keep the shoe anchored where it actually landed; store the victim position
  // separately for the blood effect.
@@ -627,7 +667,72 @@ function drawLevel3ClassroomFinisher(dt){
  }
 }
 
+function drawLevel4PoolFinisher(dt){
+ if(defeatPhase==='none')deathTimer+=dt;
+ const t=deathTimer;
+ const baseX=shoe.deathX??shoe.x;
+ // The generated 8-frame strip already contains the complete water + theatrical-red
+ // splash. Progressively longer trails are therefore revealed without extra FX layers.
+ const handoffHold=.12, impactEnd=.78, slideStart=.78, slideEnd=1.92;
+ let frame=1, slide=0;
+ // Seamless handoff: the first cinematic beat reuses the exact planted gameplay
+ // sprite (same frame, transform, scale and sole anchor). The composite finisher
+ // then begins on its first settling/splash pose, avoiding the old raised-frame pop.
+ if(t<handoffHold){frame=-1;}
+ else if(t<.34){frame=1;}
+ else if(t<.55){frame=2;}
+ else if(t<impactEnd){frame=3;}
+ else if(t<slideEnd){
+   const p=clamp((t-slideStart)/(slideEnd-slideStart),0,1);
+   frame=4+Math.min(2,Math.floor(p*3));
+   const eased=p*p*(3-2*p);
+   slide=72*eased;
+ }else{
+   // Frame 7 already depicts the sandal lifted clear of the puddle.
+   // Keep the composite sprite at the same floor anchor so its puddle/trail
+   // remains fixed on the ground; do not apply the generic extra lift here.
+   frame=7;
+   slide=72;
+ }
+ frame=clamp(frame,0,POOL_FINISHER_FRAMES-1);
+ const direction=shoe.attackFacesRight?-1:1;
+ const x=baseX+direction*slide;
+ const scale=.78*1.23*2.0;
+ const w=POOL_FINISHER_FRAME_W*scale, h=POOL_FINISHER_FRAME_H*scale;
+ // In the composite sheet the wet trail reaches the bottom around source row 322.
+ // Align that row to the established pool floor contact line.
+ const groundY=555;
+ const groundAlign=(POOL_FINISHER_FRAME_H-322)*scale;
+ if(frame===-1){
+   // Draw the exact final gameplay pose while the cinematic takes over.
+   // shoeShape() uses pool-wedge frame 0 with the same live-game transform.
+   shoeShape(baseX,555-plantedSoleOffsetY(),-.015,.78,1);
+ }else if(poolFinisherSprite.complete&&poolFinisherSprite.naturalWidth){
+   ctx.save();
+   ctx.translate(x,groundY);
+   if(shoe.attackFacesRight)ctx.scale(-1,1);
+   ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+   const sx=(frame%4)*POOL_FINISHER_FRAME_W;
+   const sy=Math.floor(frame/4)*POOL_FINISHER_FRAME_H;
+   ctx.drawImage(poolFinisherSprite,sx,sy,POOL_FINISHER_FRAME_W,POOL_FINISHER_FRAME_H,
+     -w/2,-h+groundAlign,w,h);
+   ctx.restore();
+ }else{
+   // Fallback to the regular pool shoe if the dedicated finisher asset fails to load.
+   shoe.phase='press';shoe.t=.12;
+   shoeShape(x,groundY,0,.78,1);
+ }
+ // Small impact flash, restrained so the integrated water and red streak remain visible.
+ const flashAlpha=t<.10?.48:.48*(1-clamp((t-.10)/.28,0,1));
+ if(flashAlpha>0){
+   ctx.save();ctx.setTransform(1,0,0,1,0,0);
+   ctx.globalAlpha=flashAlpha;ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+   ctx.restore();
+ }
+}
+
 function drawDeath(dt){
+ if(selectedLevel===4){drawLevel4PoolFinisher(dt);return;}
  if(selectedLevel===3){drawLevel3ClassroomFinisher(dt);return;}
  if(selectedLevel===2){drawLevel2TwistFinisher(dt);return;}
 
@@ -673,7 +778,7 @@ function drawDefeatScene(dt){
  const level=getLevel();
  const isOffice=level.id===2;
  const isClassroom=level.id===3;
- const image=level.id===3?classroomDefeatImage:(level.id===2?officeDefeatImage:gymDefeatImage);
+ const image=level.id===4?poolDefeatImage:(level.id===3?classroomDefeatImage:(level.id===2?officeDefeatImage:gymDefeatImage));
  const phrase=level.defeatPhrase;
  // Start close on the sneaker sole, then smoothly reveal the complete illustration.
  const zoomOut=clamp((t-.35)/3.0,0,1);
@@ -689,8 +794,8 @@ function drawDefeatScene(dt){
    if(sourceAspect>targetAspect)baseW=ih*targetAspect;else baseH=iw/targetAspect;
    const cropW=baseW/zoom,cropH=baseH/zoom;
    // Open on the lifted Mary Jane sole for the classroom, then reveal the complete hallway.
-   const focusX=iw*(isClassroom?.50:(isOffice?.39:.36));
-   const focusY=ih*(isClassroom?.65:(isOffice?.40:.27));
+   const focusX=iw*(level.defeatFocus?.x ?? (isClassroom?.50:(isOffice?.39:.36)));
+   const focusY=ih*(level.defeatFocus?.y ?? (isClassroom?.65:(isOffice?.40:.27))); 
    const sx=clamp(focusX-cropW/2,0,iw-cropW);
    const sy=clamp(focusY-cropH/2,0,ih-cropH);
    ctx.globalAlpha=fade;ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
@@ -736,6 +841,7 @@ function draw(){
  if(dead){
    const frameDt=Math.min(.04,(performance.now()-(draw._last||performance.now()))/1000);
    if(selectedLevel===3 && defeatPhase==='menu')drawLevel3ClassroomFinisher(0);
+   else if(selectedLevel===4 && defeatPhase==='menu')drawLevel4PoolFinisher(0);
    else if(selectedLevel===3 && defeatPhase==='wait')drawDefeatScene(0);
    else if(defeatPhase!=='none')drawDefeatScene(frameDt);
    else drawDeath(frameDt);
@@ -751,9 +857,11 @@ function draw(){
    if(shoe.phase==='move'){const bob=88+Math.sin(shoe.t*8)*3;groundY=500-bob;angle=Math.sin(shoe.t*4)*.035;scale=1.27;}
    if(shoe.phase==='drop'){
      angle=.045;scale=1.3;
-     const spriteH=(selectedLevel===3
-       ? CLASSROOM_FRAME_H*(.78*1.23*1.65)
-       : selectedLevel===2
+     const spriteH=(selectedLevel===4
+       ? POOL_FRAME_H*(.78*1.23*2.0)
+       : selectedLevel===3
+         ? CLASSROOM_FRAME_H*(.78*1.23*1.65)
+         : selectedLevel===2
         ? OFFICE_FRAME_H*(.78*1.23*1.03)
         : GIANTESS_FRAME_H*(.78*scale*1.23*1.65));
      const fall=clamp(shoe.t/.52,0,1);
