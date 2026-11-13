@@ -1,0 +1,467 @@
+/* ========================================================================== */
+/* STILI GLOBALI E CONTENITORE DEL GIOCO                                      */
+/* ========================================================================== */
+:root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#11131a; color:#f5f1e8; font-family:Georgia,serif; display:flex; min-height:100vh; align-items:center; justify-content:center; }
+  #wrap { width:min(100vw, 1100px); padding:14px; }
+  header { display:flex; justify-content:space-between; align-items:end; gap:12px; margin:0 2px 10px; }
+  h1 { margin:0; font-size:clamp(20px,3vw,30px); letter-spacing:.12em; }
+  .sub { color:#b7b2a8; font:12px/1.4 system-ui,sans-serif; letter-spacing:.08em; }
+  #gamebox { position:relative; border:1px solid #5c5260; border-radius:10px; overflow:hidden; box-shadow:0 18px 70px #000b; background:#27252a; }
+  canvas { width:100%; display:block; image-rendering:pixelated; aspect-ratio: 16 / 10; }
+  #hud { position:absolute; inset:12px 14px auto; display:flex; justify-content:space-between; align-items:start; pointer-events:none; font:12px system-ui,sans-serif; text-shadow:0 2px 4px #000; gap:10px; }
+  #healthWrap { width:min(250px,42vw); }
+  #healthLabel { display:flex; justify-content:space-between; margin-bottom:5px; color:#fff; font-weight:700; letter-spacing:.08em; }
+  #healthTrack { height:13px; background:#24151d; border:1px solid #ffffff80; border-radius:9px; overflow:hidden; box-shadow:0 2px 7px #0009; }
+  #healthFill { height:100%; width:100%; background:linear-gradient(90deg,#a52b4d,#f08ba8); transition:width .18s ease; }
+  .difficulty { display:flex; gap:7px; justify-content:center; flex-wrap:wrap; margin:14px 0 17px; }
+  .difficulty button { padding:8px 12px; background:#34313b; color:#eee; border:1px solid #77707c; font-size:12px; }
+  .difficulty button.selected { background:#e9a9c2; color:#21151d; border-color:#ffd4e3; }
+  .level-select { margin:7px 0 12px; }
+  .level-select button { font-size:11px; }
+  .pill { background:#111923bb; border:1px solid #ffffff30; padding:7px 10px; border-radius:6px; }
+  #overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#090b10b8; text-align:center; padding:24px; }
+  #overlay.hidden { display:none; }
+  .panel { max-width:440px; background:#171a22ed; border:1px solid #847687; padding:25px; border-radius:10px; box-shadow:0 10px 50px #0009; }
+  .panel h2 { margin:0 0 9px; letter-spacing:.12em; }
+  .panel p { color:#d0c9c2; font:14px/1.55 system-ui,sans-serif; }
+  button { background:#e9a9c2; color:#21151d; border:0; padding:11px 20px; border-radius:5px; font-weight:800; cursor:pointer; letter-spacing:.06em; }
+  button:hover { background:#ffc5d9; }
+  footer { display:flex; justify-content:space-between; gap:12px; margin:9px 2px 0; color:#aaa5a0; font:12px system-ui,sans-serif; }
+  #touchControls { display:none; position:absolute; z-index:6; inset:auto 0 12px; padding:0 14px; justify-content:space-between; align-items:end; pointer-events:none; touch-action:none; }
+  .dpad { display:flex; gap:10px; pointer-events:auto; }
+  .touchbtn { width:64px; height:64px; padding:0; border-radius:9px; background:#151a25bb; border:1px solid #ffffff85; color:white; font:700 19px system-ui,sans-serif; touch-action:none; user-select:none; -webkit-user-select:none; }
+  .touchbtn:active { background:#e9a9c2; color:#21151d; }
+  .sprintbtn { pointer-events:auto; position:relative; z-index:8; touch-action:none; -webkit-tap-highlight-color:transparent; }
+  #touchHint { align-self:end; margin:0 0 7px 10px; color:#fff; font:11px system-ui,sans-serif; text-shadow:0 2px 5px #000; opacity:.8; }
+  @media (pointer:coarse), (max-width:700px) {
+    #touchControls { display:flex; }
+    footer span:first-child { display:none; }
+    #wrap { padding:5px; }
+    header { margin-bottom:6px; }
+  }
+  kbd { color:#fff; background:#33343d; border:1px solid #777; border-radius:4px; padding:2px 5px; }
+  @media(max-width:650px) { footer { flex-direction:column; } #wrap{padding:7px;} }
+
+  /* Adattamento responsive: conserva l'intera area di gioco 16:10 su telefoni e tablet. */
+  @media (pointer:coarse), (max-width:700px) {
+    html, body { width:100%; min-height:100%; }
+    body { min-height:100vh; min-height:100dvh; padding:0; overflow-x:hidden; }
+    #wrap {
+      width:min(100vw, calc((100dvh - 12px) * 1.6));
+      max-width:1100px;
+      padding:4px;
+      margin:auto;
+    }
+    header, footer { display:none; }
+    #gamebox { width:100%; border-radius:7px; }
+    canvas { width:100%; height:auto; aspect-ratio:16 / 10; }
+    #hud { inset:7px 8px auto; gap:6px; font-size:10px; }
+    #healthWrap { width:min(160px,42vw); }
+    #healthTrack { height:9px; }
+    #touchControls { inset:auto 0 7px; padding:0 8px; }
+    .dpad { gap:6px !important; }
+    .touchbtn {
+      width:clamp(36px, 10vw, 48px);
+      height:clamp(36px, 10vw, 48px);
+      border-radius:8px;
+      font-size:16px;
+      opacity:.82;
+      backdrop-filter:blur(3px);
+    }
+    #touchHint { font-size:9px; margin:0 0 5px 7px; }
+    #overlay { padding:8px; }
+    #overlay .panel {
+      width:min(94%, 520px);
+      max-height:calc(100% - 12px);
+      overflow-y:auto;
+      padding:clamp(12px,3vw,22px);
+    }
+    #overlay h2 { font-size:clamp(18px,4.5vw,26px); }
+    #overlay p { font-size:clamp(11px,2.8vw,14px); line-height:1.35; }
+    .difficulty { gap:5px; margin:8px 0 10px; }
+    .difficulty button { padding:7px 9px; font-size:11px; }
+    #start { padding:10px 15px; font-size:12px; }
+  }
+  @media (pointer:coarse) and (orientation:landscape) {
+    #wrap { width:min(100vw, calc((100dvh - 8px) * 1.6)); }
+    #touchHint { display:none; }
+    .touchbtn { width:42px; height:42px; }
+  }
+
+
+  #staminaLabel { display:flex; justify-content:space-between; margin:5px 0 3px; color:#f6d7a1; font-weight:700; font-size:10px; letter-spacing:.08em; }
+  #staminaTrack { height:6px; background:#211b24; border:1px solid #ffffff66; border-radius:8px; overflow:hidden; }
+  #staminaFill { width:100%; height:100%; background:linear-gradient(90deg,#c18a42,#f5d58a); transition:width .08s linear; }
+  /* L'overlay ignora gli input per impostazione predefinita; il comando corsa li riabilita. */
+  .sprintbtn { margin-left:auto; border-color:#f3cf86aa; color:#ffe2a0; font-size:19px; pointer-events:auto; position:relative; z-index:8; touch-action:none; -webkit-tap-highlight-color:transparent; }
+  .sprintbtn.pressed,.sprintbtn.active-sprint { background:#d49a4b; color:#241a13; box-shadow:0 0 16px #f3cf8677; }
+  @media (pointer:coarse), (max-width:700px) {
+    #healthWrap { width:min(160px,42vw); }
+    #staminaLabel { font-size:8px; margin-top:3px; }
+    #staminaTrack { height:5px; }
+    /* L'overlay ignora gli input per impostazione predefinita; il comando corsa li riabilita. */
+  .sprintbtn { margin-left:auto; width:clamp(36px,10vw,48px); height:clamp(36px,10vw,48px); }
+    #touchControls { justify-content:space-between; }
+    #touchHint { display:none; }
+  }
+
+
+  /* Nasconde gli elementi HUD soltanto durante l'illustrazione cinematografica di sconfitta.
+     The GAME OVER menu that follows remains completely unchanged. */
+  #wrap.defeat-sequence-clean > header,
+  #wrap.defeat-sequence-clean > footer,
+  #wrap.defeat-sequence-clean #hud,
+  #wrap.defeat-sequence-clean #touchControls {
+    display: none !important;
+  }
+
+/* Menu principale e interfaccia della campagna */
+.main-menu{position:absolute;z-index:10;inset:0;display:flex;align-items:center;justify-content:center;padding:22px;background:linear-gradient(115deg,rgba(9,10,17,.94),rgba(22,13,25,.82)),radial-gradient(ellipse at 50% 0%,#70415d66,transparent 65%);backdrop-filter:blur(3px);text-align:center;overflow-y:auto}
+.main-menu.hidden{display:none}
+.menu-screen{display:none;width:min(100%,620px);max-height:100%;overflow-y:auto;padding:clamp(16px,3vw,30px);background:linear-gradient(145deg,rgba(27,27,39,.97),rgba(17,18,27,.97));border:1px solid #b77b9b88;border-radius:12px;box-shadow:0 18px 65px #000c,inset 0 1px #ffffff12}
+.menu-screen.active{display:block;animation:menuFade .22s ease-out}
+@keyframes menuFade{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+.menu-kicker{font:700 10px/1.4 system-ui,sans-serif;letter-spacing:.28em;color:#e5a8c4;margin-bottom:10px}
+.menu-screen h2{font:800 clamp(22px,4vw,34px)/1.12 Georgia,serif;letter-spacing:.12em;margin:0 0 10px;color:#fff1f6}
+.menu-screen h2 span{color:#e9a9c2}
+.menu-tagline{font:11px system-ui,sans-serif;letter-spacing:.2em;color:#bdb0bb;margin:14px 0 24px!important}
+.menu-description{max-width:470px;margin:8px auto 20px!important;color:#d0c9d2;font:13px/1.55 system-ui,sans-serif}
+.main-menu-actions{display:grid;gap:9px;width:min(100%,310px);margin:0 auto}
+.main-menu button{min-height:42px;padding:11px 16px;font:800 11px system-ui,sans-serif;letter-spacing:.12em;border:1px solid #f5c5d8;background:linear-gradient(180deg,#f0b7ce,#d98eae);color:#26151f;box-shadow:0 3px 0 #75435a;transition:transform .12s,filter .12s,background .12s}
+.main-menu button:hover{filter:brightness(1.12);transform:translateY(-1px)}
+.main-menu button:active{transform:translateY(1px);box-shadow:0 1px 0 #75435a}
+.main-menu button.secondary{background:#292936;color:#eee2e9;border:1px solid #716274;box-shadow:0 3px 0 #11121a}
+.main-menu button.danger{background:linear-gradient(180deg,#b84c61,#842d43);border-color:#df8294;color:#fff;box-shadow:0 3px 0 #431b2a}
+.menu-save-status{margin-top:20px;color:#9b91a0;font:9px system-ui,sans-serif;letter-spacing:.18em}
+.level-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:20px 0}
+.level-card{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-height:104px!important;text-align:left!important;padding:14px!important;background:linear-gradient(145deg,#36303e,#242431)!important;color:#f8edf3!important;border:1px solid #8c7488!important;box-shadow:0 3px 0 #111!important}
+.level-card .level-number{font:700 10px system-ui,sans-serif;color:#e9a9c2;letter-spacing:.2em}
+.level-card strong{font:800 14px Georgia,serif;letter-spacing:.08em}
+.level-card small{font:9px system-ui,sans-serif;letter-spacing:.14em;color:#a9d7b6}
+.level-card.locked{filter:grayscale(.8);opacity:.48;cursor:not-allowed;background:#24242b!important;border-color:#514d57!important}
+.level-card.locked small{color:#d49aa4}
+.level-card:not(.locked):hover{border-color:#f1b5ce!important;background:linear-gradient(145deg,#554052,#302b3a)!important}
+.back-button{margin-top:10px;min-width:150px}
+.settings-block{margin:24px auto 18px;max-width:430px;padding:16px;background:#ffffff08;border:1px solid #ffffff18;border-radius:8px}
+.settings-label{font:700 10px system-ui,sans-serif;letter-spacing:.2em;color:#c6b8c5;margin-bottom:12px}
+.settings-difficulty{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+.main-menu .settings-difficulty button{padding:10px 5px;font-size:10px;background:#302d38;color:#eee;border:1px solid #665c6a;box-shadow:none}
+.main-menu .settings-difficulty button.selected{background:#e9a9c2;color:#21151d;border-color:#ffd4e3}
+
+.cheat-description{margin:-3px 0 12px;color:#c9bdc8;font:11px/1.45 system-ui,sans-serif}
+.cheat-entry{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+.main-menu .cheat-entry input{min-width:0;width:100%;box-sizing:border-box;padding:10px 12px;background:#211e28;color:#fff;border:1px solid #665c6a;border-radius:5px;font:700 14px system-ui,sans-serif;letter-spacing:.28em;text-align:center;outline:none}
+.main-menu .cheat-entry input:focus{border-color:#e9a9c2;box-shadow:0 0 0 2px #e9a9c233}
+.main-menu .cheat-entry button{padding:10px 13px;font-size:10px;white-space:nowrap}
+.pin-feedback{min-height:15px;margin-top:9px;font:700 9px/1.4 system-ui,sans-serif;letter-spacing:.06em;color:#c6b8c5}
+.pin-feedback.success{color:#a9d7b6}.pin-feedback.error{color:#e9a0a9}
+
+.settings-actions,.confirm-actions{display:grid;gap:9px;max-width:330px;margin:0 auto}
+.stats-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:20px 0 14px}
+.stat-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:88px;padding:10px 5px;background:#ffffff09;border:1px solid #ffffff20;border-radius:7px}
+.stat-icon{font:20px Georgia,serif;color:#e9a9c2}
+.stat-card strong{font:700 clamp(17px,3vw,23px) system-ui,sans-serif;color:#fff;overflow-wrap:anywhere}
+.stat-card small{font:8px system-ui,sans-serif;letter-spacing:.12em;color:#b8aeb9}
+.level-stats{margin:12px 0 4px;text-align:left;font:11px/1.6 system-ui,sans-serif;color:#d3cbd4}
+.level-stats-row{display:flex;justify-content:space-between;gap:10px;padding:6px 2px;border-bottom:1px solid #ffffff16}
+#returnToMenu{display:none;margin:10px auto 0}
+#overlay.game-over-menu #returnToMenu{display:block}
+@media(max-width:700px){.main-menu{padding:7px}.menu-screen{padding:14px;border-radius:8px}.menu-screen h2{font-size:clamp(18px,5vw,25px)}.menu-kicker{font-size:8px;margin-bottom:6px}.menu-tagline{margin:8px 0 14px!important;font-size:9px}.main-menu button{min-height:36px;padding:8px 10px;font-size:10px}.level-cards{gap:7px;margin:12px 0}.level-card{min-height:78px!important;padding:10px!important}.level-card strong{font-size:12px}.stats-grid{gap:5px;margin:12px 0}.stat-card{min-height:70px}.stat-card small{font-size:7px}.settings-block{margin:12px auto;padding:11px}}
+
+
+/* Pannello di sconfitta: consente di riprovare o tornare al menu principale. */
+#overlay.game-over-menu .panel > .sub,
+#overlay.game-over-menu .panel > .level-select,
+#overlay.game-over-menu .panel > .difficulty,
+#overlay.game-over-menu .panel > p:nth-of-type(2) {
+  display:none !important;
+}
+#overlay.game-over-menu .panel > #start,
+#overlay.game-over-menu .panel > #returnToMenu {
+  display:block;
+  min-width:190px;
+  margin:12px auto 0;
+}
+#overlay.game-over-menu .panel > #returnToMenu { margin-top:9px; }
+#overlay.game-over-menu .panel { width:min(94%,440px); }
+
+/* Pannello di vittoria: consente di avanzare o tornare al menu della campagna. */
+#victoryNext,#victoryMenu{display:none;margin:10px auto 0;min-width:190px;}
+#overlay.victory-menu #start,
+#overlay.victory-menu #returnToMenu{display:none!important;}
+#overlay.victory-menu #victoryNext,
+#overlay.victory-menu #victoryMenu{display:block;}
+#overlay.victory-menu .panel > .sub,
+#overlay.victory-menu .panel > .level-select,
+#overlay.victory-menu .panel > .difficulty,
+#overlay.victory-menu .panel > p:nth-of-type(2){display:none!important;}
+#overlay.victory-menu .panel{width:min(94%,440px);}
+
+
+/* Menu principale illustrato */
+#wrap:has(#mainMenu:not(.hidden)) > header,
+#wrap:has(#mainMenu:not(.hidden)) > footer { display:none !important; }
+#wrap:has(#mainMenu:not(.hidden)) { width:min(100vw, 1200px); padding:8px; }
+#wrap:has(#mainMenu:not(.hidden)) #gamebox {
+  border:1px solid #5d252d;
+  box-shadow:0 20px 80px #000e, 0 0 0 1px #c34a4a33;
+}
+#mainMenu.main-menu {
+  align-items:stretch;
+  justify-content:flex-start;
+  padding:0;
+  text-align:left;
+  overflow:hidden;
+  background:
+    linear-gradient(90deg,rgba(8,7,10,.28) 0%,rgba(8,7,10,.08) 42%,transparent 68%),
+    linear-gradient(0deg,rgba(8,6,8,.18),transparent 45%),
+    url('../assets/backgrounds/menu-main.webp') center center / cover no-repeat;
+  backdrop-filter:none;
+}
+#mainMenu .menu-screen { display:none; }
+#mainMenu .menu-screen.active { display:block; }
+#mainMenu .menu-screen[data-screen="home"] {
+  position:absolute;
+  left:2.6%;
+  top:36%;
+  width:min(31%,360px);
+  max-height:62%;
+  overflow-y:auto;
+  padding:0;
+  background:transparent;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+  animation:menuFade .28s ease-out;
+}
+#mainMenu .main-menu-actions {
+  width:100%;
+  margin:0;
+  gap:8px;
+}
+#mainMenu .menu-save-status {
+  margin:13px 0 0 3px;
+  color:#d2b9b5;
+  font-size:8px;
+  text-shadow:0 2px 5px #000;
+}
+#mainMenu button {
+  position:relative;
+  min-height:43px;
+  padding:11px 16px 11px 20px;
+  text-align:left;
+  font:800 11px/1.2 system-ui,sans-serif;
+  letter-spacing:.16em;
+  color:#f8eeee;
+  background:linear-gradient(100deg,rgba(25,17,20,.96),rgba(45,22,27,.91));
+  border:1px solid #a94b50;
+  border-left:4px solid #c83e48;
+  border-radius:2px;
+  box-shadow:0 4px 0 rgba(0,0,0,.65), inset 0 1px rgba(255,255,255,.08);
+  text-shadow:0 1px 3px #000;
+  transition:transform .14s ease,filter .14s ease,border-color .14s ease,background .14s ease;
+}
+#mainMenu button:hover:not(:disabled) {
+  filter:brightness(1.22);
+  transform:translateX(4px);
+  border-color:#f08a83;
+  border-left-color:#ff5a5a;
+  background:linear-gradient(100deg,rgba(68,24,29,.98),rgba(37,19,24,.96));
+}
+#mainMenu button:active:not(:disabled) { transform:translateX(2px) translateY(2px); box-shadow:0 1px 0 #000; }
+#mainMenu button.secondary {
+  color:#e8dadd;
+  background:linear-gradient(100deg,rgba(15,15,19,.94),rgba(29,25,30,.9));
+  border-color:#665056;
+  border-left-color:#87343e;
+  box-shadow:0 4px 0 rgba(0,0,0,.62),inset 0 1px rgba(255,255,255,.06);
+}
+#mainMenu button.danger {
+  color:#fff;
+  background:linear-gradient(100deg,rgba(92,20,31,.98),rgba(48,15,22,.96));
+  border-color:#d46a70;
+  border-left-color:#ff3e4c;
+}
+/* Le schermate secondarie mantengono il linguaggio visivo rosso e nero. */
+#mainMenu .menu-screen:not([data-screen="home"]) {
+  position:relative;
+  width:min(92%,620px);
+  max-height:calc(100% - 28px);
+  margin:auto;
+  padding:clamp(16px,3vw,30px);
+  text-align:center;
+  background:linear-gradient(145deg,rgba(15,12,16,.96),rgba(23,15,20,.94));
+  border:1px solid #9b454d;
+  border-radius:4px;
+  box-shadow:0 18px 65px #000d,inset 0 1px #ffffff12;
+}
+#mainMenu .menu-screen:not([data-screen="home"]) h2 { color:#fff0ee; }
+#mainMenu .menu-kicker { color:#ef8580; }
+#mainMenu .menu-tagline { color:#d5b9b9; }
+#mainMenu .level-card { text-align:left; }
+@media(max-width:700px) {
+  #wrap:has(#mainMenu:not(.hidden)) { width:min(100vw, calc((100dvh - 8px) * 1.6)); padding:4px; }
+  #mainMenu.main-menu { background-position:center center; }
+  #mainMenu .menu-screen[data-screen="home"] {
+    left:2.5%; top:37%; width:min(34%,250px); max-height:61%;
+  }
+  #mainMenu .main-menu-actions { gap:5px; }
+  #mainMenu button { min-height:34px; padding:7px 8px 7px 11px; font-size:clamp(7px,1.5vw,10px); letter-spacing:.1em; border-left-width:3px; }
+  #mainMenu .menu-save-status { font-size:6px; margin-top:7px; }
+}
+@media(max-width:420px) and (orientation:portrait) {
+  #mainMenu .menu-screen[data-screen="home"] { top:35%; width:36%; }
+  #mainMenu button { min-height:30px; font-size:7px; }
+}
+
+/* Linguaggio visivo coerente per i pulsanti di tutte le schermate. */
+#overlay .panel {
+  background:linear-gradient(145deg,rgba(17,12,15,.97),rgba(28,15,20,.96));
+  border:1px solid #9b454d;
+  border-radius:4px;
+  box-shadow:0 18px 65px #000e,0 0 0 1px #c34a4a22,inset 0 1px #ffffff12;
+}
+#overlay .panel h2 { color:#fff0ee; font-family:Georgia,serif; }
+#overlay .panel .sub { color:#d69a98; }
+#overlay .panel p { color:#e0d2d0; }
+#overlay button:not(.touchbtn) {
+  position:relative;
+  min-height:39px;
+  padding:10px 15px 10px 18px;
+  color:#f8eeee;
+  font:800 10px/1.25 system-ui,sans-serif;
+  letter-spacing:.12em;
+  text-align:center;
+  background:linear-gradient(100deg,rgba(25,17,20,.97),rgba(53,23,29,.94));
+  border:1px solid #a94b50;
+  border-left:4px solid #c83e48;
+  border-radius:2px;
+  box-shadow:0 4px 0 rgba(0,0,0,.65),inset 0 1px rgba(255,255,255,.08);
+  text-shadow:0 1px 3px #000;
+  transition:transform .14s ease,filter .14s ease,border-color .14s ease,background .14s ease;
+}
+#overlay button:not(.touchbtn):hover:not(:disabled) {
+  filter:brightness(1.2);
+  transform:translateY(-1px);
+  border-color:#f08a83;
+  border-left-color:#ff5a5a;
+  background:linear-gradient(100deg,rgba(68,24,29,.99),rgba(44,19,25,.97));
+}
+#overlay button:not(.touchbtn):active:not(:disabled) {
+  transform:translateY(2px);
+  box-shadow:0 1px 0 #000;
+}
+#overlay button:not(.touchbtn):disabled {
+  opacity:.38;
+  filter:grayscale(1);
+  cursor:not-allowed;
+}
+#overlay button.secondary,
+#overlay #returnToMenu,
+#overlay #victoryMenu {
+  color:#e8dadd;
+  background:linear-gradient(100deg,rgba(15,15,19,.96),rgba(29,25,30,.94));
+  border-color:#665056;
+  border-left-color:#87343e;
+}
+#overlay .difficulty button.selected {
+  color:#fff;
+  background:linear-gradient(100deg,#702b35,#3b1821);
+  border-color:#e17a7e;
+  border-left-color:#ff6668;
+  box-shadow:0 0 0 1px #d45b6233,0 4px 0 rgba(0,0,0,.65),inset 0 0 16px #c33b4822;
+}
+#overlay .level-select button { font-size:9px; padding:8px 10px; }
+#overlay #start,
+#overlay #victoryNext { min-width:190px; }
+
+/* La schermata Continua usa un'anteprima dedicata per ciascun livello. */
+#mainMenu .level-cards { gap:12px; }
+#mainMenu .level-card {
+  min-height:96px !important;
+  justify-content:flex-end;
+  overflow:hidden;
+  background-position:center;
+  background-size:100% 100%;
+  background-repeat:no-repeat;
+  border:1px solid #a94b50 !important;
+  border-left:4px solid #c83e48 !important;
+  box-shadow:0 5px 0 #080608, inset 0 -54px 35px rgba(0,0,0,.85) !important;
+  text-shadow:0 2px 4px #000;
+  transition:transform .16s ease,filter .16s ease,border-color .16s ease;
+}
+#mainMenu .level-card:nth-child(1) {
+  background-image:linear-gradient(0deg,rgba(8,5,8,.94),rgba(8,5,8,.06) 78%),url('../assets/backgrounds/gym-card.webp') !important;
+}
+#mainMenu .level-card:nth-child(2) {
+  background-image:linear-gradient(0deg,rgba(8,5,8,.94),rgba(8,5,8,.06) 78%),url('../assets/backgrounds/office-card.webp') !important;
+}
+#mainMenu .level-card:nth-child(3) {
+  background-image:linear-gradient(0deg,rgba(8,5,8,.94),rgba(8,5,8,.06) 78%),url('../assets/backgrounds/classroom-card.webp') !important;
+}
+#mainMenu .level-card:nth-child(4) {
+  background-image:linear-gradient(0deg,rgba(8,5,8,.94),rgba(8,5,8,.06) 78%),url('../assets/backgrounds/pool-card.webp') !important;
+}
+#mainMenu .level-card:not(.locked):hover {
+  transform:translateY(-2px);
+  filter:brightness(1.16);
+  border-color:#f08a83 !important;
+  border-left-color:#ff5a5a !important;
+}
+#mainMenu .level-card .level-number { color:#ffaaa4; }
+#mainMenu .level-card strong { color:#fff4f1; font-size:15px; }
+#mainMenu .level-card small { color:#ffd2c7; font-weight:800; }
+#mainMenu .level-card.locked {
+  filter:grayscale(.9) brightness(.58);
+  opacity:.62;
+  border-color:#625257 !important;
+  border-left-color:#704047 !important;
+}
+#mainMenu .level-card.locked small { color:#e0a5a5; }
+#mainMenu .settings-difficulty button.selected {
+  color:#fff !important;
+  background:linear-gradient(100deg,#702b35,#3b1821) !important;
+  border-color:#e17a7e !important;
+  border-left:4px solid #ff6668 !important;
+  box-shadow:0 0 0 1px #d45b6233,0 3px 0 #080608 !important;
+}
+@media(max-width:700px) {
+  #mainMenu .level-cards { gap:7px; }
+  #mainMenu .level-card { min-height:76px !important; }
+  #mainMenu .level-card strong { font-size:11px; }
+  #overlay button:not(.touchbtn) { min-height:34px; padding:8px 10px 8px 12px; font-size:9px; }
+}
+
+#mainMenu .level-card:nth-child(5) { background-image:linear-gradient(0deg,rgba(8,5,8,.94),rgba(8,5,8,.06) 78%),url('../assets/backgrounds/cafeteria-card.webp') !important; }
+
+
+/* Menu di pausa e transizione più sicura verso il game over */
+#pauseButton {
+  pointer-events:auto; flex:0 0 auto; min-width:38px; min-height:36px;
+  padding:5px 10px; border:1px solid #ffffff70; border-radius:7px;
+  background:#171923d9; color:#fff; font:800 18px/1 system-ui,sans-serif;
+  box-shadow:0 2px 8px #0008; touch-action:manipulation;
+}
+#pauseButton:hover { background:#e9a9c2; color:#21151d; }
+.pause-menu {
+  position:absolute; z-index:20; inset:0; display:flex; align-items:center; justify-content:center;
+  padding:18px; background:rgba(5,7,12,.78); backdrop-filter:blur(5px); text-align:center;
+}
+.pause-menu.hidden { display:none; }
+.pause-panel {
+  width:min(92%,390px); padding:26px 22px; border:1px solid #b77b9b99; border-radius:12px;
+  background:linear-gradient(145deg,rgba(27,27,39,.98),rgba(17,18,27,.98));
+  box-shadow:0 18px 65px #000d;
+}
+.pause-panel h2 { margin:0 0 20px; color:#fff1f6; font:800 clamp(25px,5vw,34px) Georgia,serif; letter-spacing:.16em; }
+.pause-panel button { display:block; width:min(100%,280px); margin:9px auto; }
+.pause-panel button.secondary { background:#34313b; color:#f1e8ee; border:1px solid #77707c; }
+.pause-panel p { margin:16px 0 0; color:#bdb3bd; font:11px system-ui,sans-serif; }
+#overlay.game-over-menu button:disabled { opacity:.48; cursor:default; }
+@media (pointer:coarse), (max-width:700px) {
+  #pauseButton { min-width:36px; min-height:34px; padding:4px 9px; font-size:16px; }
+  .pause-panel { padding:20px 16px; }
+  .pause-panel button { min-height:42px; }
+}

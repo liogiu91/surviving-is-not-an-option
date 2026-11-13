@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>SURVIVING IS NOT AN OPTION — v0.2.7.01</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<!-- Contenitore principale: intestazione, canvas, HUD, menu e pannelli di gioco. -->
+<div id="wrap">
+  <header><div><h1>SURVIVING IS NOT AN OPTION</h1><div class="sub">MICRO SURVIVAL · VERSIONE 0.2.7.01</div></div><div class="sub">UNA STANZA. UN PASSO ALLA VOLTA.</div></header>
+  <div id="gamebox">
+    <canvas id="c" width="960" height="600" aria-label="Gioco di sopravvivenza"></canvas>
+    <!-- HUD: salute, stamina, cronometro e comando pausa. -->
+    <div id="hud"><div class="pill" id="healthWrap"><div id="healthLabel"><span>VITA</span><span id="healthText">3 / 3</span></div><div id="healthTrack"><div id="healthFill"></div></div><div id="staminaLabel"><span>STAMINA</span><span id="staminaText">100%</span></div><div id="staminaTrack"><div id="staminaFill"></div></div></div><div class="pill" id="score">TEMPO: 0.0 s</div><button id="pauseButton" type="button" aria-label="Metti in pausa" title="Pausa (ESC)">Ⅱ</button></div>
+    <div id="pauseMenu" class="pause-menu hidden" role="dialog" aria-modal="true" aria-labelledby="pauseTitle"><div class="pause-panel"><div class="menu-kicker">PARTITA IN CORSO</div><h2 id="pauseTitle">PAUSA</h2><button id="pauseResume" type="button">RIPRENDI</button><button id="pauseRestart" type="button" class="secondary">RICOMINCIA LIVELLO</button><button id="pauseMainMenu" type="button" class="secondary">MENU PRINCIPALE</button><p>Premi ESC per riprendere</p></div></div>
+    <div id="touchControls" aria-label="Comandi touch">
+      <div class="dpad" style="display:flex;gap:9px">
+        <button class="touchbtn" data-key="a" aria-label="Sinistra">◀</button>
+        <button class="touchbtn" data-key="d" aria-label="Destra">▶</button>
+      </div>
+      <div id="touchHint">TIENI PREMUTO PER CORRERE</div><button class="touchbtn sprintbtn" data-key="shift" aria-label="Corri">⚡</button>
+    </div>
+    <!-- Menu persistente della campagna e delle impostazioni. -->
+    <div id="mainMenu" class="main-menu">
+      <section class="menu-screen active" data-screen="home">
+        <div class="main-menu-actions">
+          <button type="button" data-action="new-game">NUOVA PARTITA</button>
+          <button type="button" data-action="continue">CONTINUA</button>
+          <button type="button" class="secondary" data-action="settings">IMPOSTAZIONI</button>
+          <button type="button" class="secondary" data-action="exit">ESCI</button>
+        </div>
+        <div class="menu-save-status" id="saveStatus">SALVATAGGIO LOCALE</div>
+      </section>
+
+      <section class="menu-screen" data-screen="new-game-confirm">
+        <div class="menu-kicker">ATTENZIONE</div>
+        <h2>NUOVA PARTITA</h2>
+        <p class="menu-description">Se continui, la progressione della campagna verrà azzerata: perderai i livelli sbloccati e dovrai ripartire dal livello 1. Le statistiche globali e i record personali resteranno conservati.</p>
+        <div class="confirm-actions">
+          <button type="button" class="danger" data-action="new-game-confirm">SÌ, RICOMINCIA</button>
+          <button type="button" class="secondary" data-action="home">ANNULLA</button>
+        </div>
+      </section>
+
+      <section class="menu-screen" data-screen="levels">
+        <div class="menu-kicker">CAMPAGNA</div>
+        <h2 id="levelsHeading">SELEZIONA IL LIVELLO</h2>
+        <p class="menu-description" id="levelsDescription">Scegli una delle aree che hai già sbloccato.</p>
+        <div class="level-cards" id="menuLevelCards">
+          <button type="button" class="level-card" data-menu-level="1"><span class="level-number">01</span><strong>PALESTRA</strong><small>DISPONIBILE</small></button>
+          <button type="button" class="level-card" data-menu-level="2"><span class="level-number">02</span><strong>UFFICIO</strong><small>BLOCCATO</small></button>
+          <button type="button" class="level-card" data-menu-level="3"><span class="level-number">03</span><strong>AULA 5F</strong><small>BLOCCATO</small></button>
+          <button type="button" class="level-card" data-menu-level="4"><span class="level-number">04</span><strong>PISCINA</strong><small>BLOCCATO</small></button>
+          <button type="button" class="level-card" data-menu-level="5"><span class="level-number">05</span><strong>MENSA</strong><small>BLOCCATO</small></button>
+        </div>
+        <button type="button" class="secondary back-button" data-action="home">INDIETRO</button>
+      </section>
+
+      <section class="menu-screen" data-screen="settings">
+        <div class="menu-kicker">PERSONALIZZAZIONE</div>
+        <h2>IMPOSTAZIONI</h2>
+        <div class="settings-block">
+          <div class="settings-label">DIFFICOLTÀ</div>
+          <div class="settings-difficulty">
+            <button type="button" data-menu-diff="normal">NORMALE · 30 S</button>
+            <button type="button" data-menu-diff="hard">DIFFICILE · 40 S</button>
+          </div>
+        </div>
+        <div class="settings-block cheat-block">
+          <div class="settings-label">CODICE SVILUPPATORE</div>
+          <p class="cheat-description">Inserisci il PIN per sbloccare tutti i livelli e testarli liberamente.</p>
+          <div class="cheat-entry">
+            <input id="developerPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="PIN a 4 cifre" aria-label="PIN sviluppatore">
+            <button type="button" data-action="unlock-all">SBLOCCA</button>
+          </div>
+          <div id="pinFeedback" class="pin-feedback" role="status" aria-live="polite"></div>
+        </div>
+        <div class="settings-actions">
+          <button type="button" class="secondary" data-action="statistics">VISUALIZZA STATISTICHE</button>
+          <button type="button" class="danger" data-action="reset-confirm">RESET SALVATAGGI</button>
+        </div>
+        <button type="button" class="secondary back-button" data-action="home">INDIETRO</button>
+      </section>
+
+      <section class="menu-screen" data-screen="statistics">
+        <div class="menu-kicker">IL TUO PERCORSO</div>
+        <h2>STATISTICHE</h2>
+        <div class="stats-grid">
+          <div class="stat-card"><span class="stat-icon">✕</span><strong id="statDeaths">0</strong><small>DECESSI</small></div>
+          <div class="stat-card"><span class="stat-icon">★</span><strong id="statVictories">0</strong><small>VITTORIE</small></div>
+          <div class="stat-card"><span class="stat-icon">◷</span><strong id="statPlayTime">00:00:00</strong><small>TEMPO GIOCATO</small></div>
+          <div class="stat-card"><span class="stat-icon">◆</span><strong id="statUnlocked">1 / 5</strong><small>LIVELLI SBLOCCATI</small></div>
+          <div class="stat-card"><span class="stat-icon">↗</span><strong id="statGames">0</strong><small>PARTITE INIZIATE</small></div>
+          <div class="stat-card"><span class="stat-icon">⌁</span><strong id="statWinRate">0%</strong><small>VITTORIE / PARTITE</small></div>
+        </div>
+        <div class="level-stats" id="levelStats"></div>
+        <button type="button" class="secondary back-button" data-action="settings">INDIETRO</button>
+      </section>
+
+      <section class="menu-screen" data-screen="reset">
+        <div class="menu-kicker">ATTENZIONE</div>
+        <h2>RESET SALVATAGGI</h2>
+        <p class="menu-description">Vuoi davvero cancellare la progressione e tutte le statistiche? Questa operazione non può essere annullata.</p>
+        <div class="confirm-actions">
+          <button type="button" class="danger" data-action="reset-now">SÌ, CANCELLA TUTTO</button>
+          <button type="button" class="secondary" data-action="settings">ANNULLA</button>
+        </div>
+      </section>
+
+      <section class="menu-screen" data-screen="exit">
+        <div class="menu-kicker">SESSIONE TERMINATA</div>
+        <h2>GRAZIE PER AVER GIOCATO</h2>
+        <p class="menu-description">Puoi chiudere questa scheda del browser. I tuoi progressi resteranno salvati su questo dispositivo.</p>
+        <button type="button" data-action="home">TORNA AL MENÙ</button>
+      </section>
+    </div>
+    <!-- Overlay di gioco: introduzione, selezione livello e schermate finali. -->
+    <div id="overlay" class="hidden">
+      <div class="panel"><h2 id="menuTitle">Palestra</h2><div class="sub" style="margin:8px 0 4px">SELEZIONA IL LIVELLO</div><div class="difficulty level-select"><button type="button" data-level="1" class="selected">Palestra</button><button type="button" data-level="2">Ufficio</button><button type="button" data-level="3">Aula</button><button type="button" data-level="4">Piscina</button><button type="button" data-level="5">Mensa</button></div><p>Una pozione creata per errore nel laboratorio di scienze ti ha rimpicciolito fino a pochi centimetri. Ti ritrovi nella palestra della scuola, dove una studentessa è impegnata nel suo allenamento quotidiano. È completamente ignara della tua presenza e non immagina minimamente il pericolo che rappresenta per te.</p><div class="sub">SCEGLI LA DIFFICOLTÀ</div><div class="difficulty"><button type="button" data-diff="normal" class="selected">NORMALE · 5 HP · 30 S</button><button type="button" data-diff="hard">DIFFICILE · 4 HP · 40 S</button></div><p><kbd><kbd>A</kbd> <kbd>D</kbd> / <kbd>←</kbd> <kbd>→</kbd> per muoverti, <kbd>SHIFT</kbd> per correre, oppure i pulsanti touch. <kbd>R</kbd> per ricominciare.</p><button id="start">INIZIA A SOPRAVVIVERE</button><button id="returnToMenu" class="secondary" type="button">MENÙ PRINCIPALE</button><button id="victoryNext" type="button">LIVELLO SUCCESSIVO</button><button id="victoryMenu" class="secondary" type="button">MENÙ PRINCIPALE</button></div>
+    </div>
+  </div>
+  <footer><span>Movimento: WASD / frecce · SHIFT per correre · Evita l'ombra e il contatto con la suola.</span><span>SOPRAVVIVI 30 SECONDI IN NORMALE · 40 IN DIFFICILE</span></footer>
+</div>
+<script type="module" src="js/main.js"></script>
+</body></html>
